@@ -1,18 +1,13 @@
-extensions [ gis csv ]
+extensions [ csv ]
 
 globals [
-  rj-areas
-  num-population
-  num-regions
+
   contact-daily
   contagion-prob-daily
+  icus-available
 ]
 
 patches-own [
-  ID
-  population
-  density
-  geocodi
 ]
 
 turtles-own[
@@ -22,6 +17,7 @@ turtles-own[
   immune?
   hospitalized?
   icu?
+  dead?
   severity    ;; level of severity 0 (Asymptomatic) 1 (Mild) 2 (Severe) 3 (Critical)
   days-infected
 
@@ -40,90 +36,178 @@ to setup
   reset-ticks
 end
 
+;;;;
+to setup-globals
+  load-statistics
+  set icus-available #-icus
+end
 
+;;;;
+to setup-map
+  resize-world -180 180 -180 180
+  set-patch-size 1
+  ;ask patches [set pcolor white]
+end
+
+;;;;
+to populate
+  ; create turtles
+  create-turtles num-population [
+    set shape "circle"
+    set size 10
+    set infected? false
+    set immune? false
+    set hospitalized? false
+    set icu? false
+    set dead? false
+
+    ifelse random-float 100 < perc-idosos [
+      ; create old
+      set old? true
+      set color orange
+    ] [
+      ; create young
+      set old? false
+      set color green
+    ]
+    ; if live in a favela
+    ifelse random-float 100 < perc-favelas [
+      set favela? true
+      set shape "default"
+    ] [
+      set favela? false
+    ]
+  ]
+
+  layout-circle turtles 150
+end
+
+;;;;
+to setup-ties
+  ask turtles with [favela? = true] [
+    create-links-to n-of 2 other turtles with [favela? = true] [
+      ;hide-link
+    ]
+    create-links-to n-of 1 other turtles with [favela? = false] [
+      ;hide-link
+    ]
+  ]
+
+  ;; people NOT from the favelas
+  ask turtles with [favela? = false] [
+    create-links-to n-of 2 other turtles with [favela? = false] [
+      ;hide-link
+    ]
+    create-links-to n-of 1 other turtles with [favela? = true] [
+      ;hide-link
+    ]
+  ]
+end
+
+to infect-first
+   infect one-of turtles
+end
+
+
+;;;; INFECT PROCEDURES
+to infect [ person ]
+  ask person [
+    set infected? true
+    set immune? false
+    set days-infected 0
+
+    ;; define severity
+    let chance random 100
+    ifelse old? [ ;old
+      ifelse chance < 20 [
+        set severity 0
+      ] [
+        ifelse chance < 40 [
+          set severity 1
+        ][
+          ifelse chance < 60 [
+            set severity 2
+          ][
+            set severity 3
+          ]
+        ]
+      ]
+    ] [ ; young
+      ifelse chance < 60 [
+        set severity 0
+      ][
+        ifelse chance < 80 [
+          set severity 1
+        ][
+          ifelse chance < 98 [
+            set severity 2
+          ][
+            set severity 3
+          ]
+        ]
+      ]
+    ]
+
+    set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
+    set prob-spread item days-infected (item severity contagion-prob-daily)
+    set shape "person doctor"
+    set size 30
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to go
-  interact-with-others
+  if ticks = 90 [stop]
   disease-development
+  interact-with-others
 
   tick
 end
 
 
-
-
-; Development of the infected people
-to disease-development
-  ask turtles with [infected? = true] [
-    set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
-    set prob-spread item days-infected (item severity contagion-prob-daily)
-    set days-infected days-infected + 1
-
-    if severity = 0 or severity = 1[
-      if days-infected = 28 [
-        set infected? false
-        set immune? true
-      ]
-    ] ; end severity = 0 or 1
-
-    if severity = 2 [
-      if days-infected = 11 [ hospitilize ]
-      if days-infected = 28 [
-        set infected? false
-        set immune? true
-      ]
-    ] ; end severity = 2
-
-    if severity = 3 [
-      if days-infected = 11 [ hospitilize ]
-      if days-infected = 17 [ icu ]
-      if days-infected = 28 [
-        set infected? false
-        set immune? true
-
-      ]
-    ] ; end severity = 3
-
-  ]
-end
-
-
-to hospitilize
-end
-
-
-to icu
-end
-
-
-
-
 ; interactions between infected people
 to interact-with-others
   ; only infected turtles matter for the spread of the virus
-  ask turtles with [infected? = true ] [
+  ask turtles with [infected? and not dead?] [
     let numlinks count my-links
+    let contagion-probability prob-spread
+
+    if debug? [type self type " has " type numlinks type " links and " type num-contacts type " contacts\n"]
+
     let sTurtle self
-    if numlinks >= num-contacts [  ; if the number of contacts is bigger than the number of friends/family
+
+    ifelse numlinks >= num-contacts [  ; if the number of contacts is bigger than the number of friends/family
       ask n-of numlinks link-neighbors [
-        if infected? = false [
-          if random-float 100 <= prob-spread [
-            type sTurtle type " infected " type self type "\n"
+        if not infected? [
+          if random-float 100 <= contagion-probability [
+            if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
           ]
         ]
       ]
-    ]
-    if numlinks < num-contacts [ ; less close contacts
+    ][ ; less close contacts
       ask link-neighbors [
-        if infected? = false [
-          if random-float 100 <= prob-spread [ infect self ]
+        if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
+        if debug? [type "Contagion probability: " type contagion-probability type "\n"]
+        if not infected? [
+          if debug? [type "Neighbor not infected: " type self type "\n"]
+          if random-float 100 <= contagion-probability [
+            infect self
+            if debug? [type sTurtle type " infected " type self type "\n"]
+          ]
         ]
       ]
+      ; infect not close ties
       let num-others num-contacts - numlinks ; contacts to make besides the close ones done before
       ask n-of num-others turtles with [ not member? sTurtle link-neighbors ][
+
         if debug? [type self type "\n"]
-        if infected? = false [
-          if random-float 100 <= prob-spread [ infect self ]
+
+        if not infected? [
+          if random-float 100 <= contagion-probability [
+            if debug? [type sTurtle type " infected " type self type "\n"]
+            infect self
+          ]
         ]
       ]
 
@@ -132,47 +216,87 @@ to interact-with-others
 end
 
 
+; Development of the infected people
+to disease-development
+  ask turtles with [infected? and not dead?] [
+    ; increment day
+    set days-infected days-infected + 1
+    ; update information from the cases
+    set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
+    set prob-spread item days-infected (item severity contagion-prob-daily)
 
-to setup-globals
-  set num-population 0
-  load-statistics
-end
-
-
-
-;;;; INFECT PROCEDURES
-
-to infect-first
-   infect one-of turtles
-end
-
-to infect [ person ]
-  ask person [
-    let rnd random 100
-    ; 4%
-    ifelse rnd < 4 [
-      set severity 3
-    ][
-      ; 10% (+4%)
-      ifelse rnd < 14 [
-        set severity 1
-      ][
-        ; 56% (+14%)
-        ifelse rnd < 70 [
-          set severity 1
-        ] [
-          ; 30%
-          set severity 0
-        ]
+    if severity = 0 or severity = 1[
+      if days-infected = 27 [
+        set infected? false
+        set immune? true
       ]
-    ]
+    ] ; end severity = 0 or 1
 
-    set infected? true
-    set immune? false
-    set days-infected 0
-    set size 10
+    if severity = 2 [
+      if days-infected = 11 [ hospitilize self]
+      if days-infected = 27 [
+        set infected? false
+        set immune? true
+      ]
+    ] ; end severity = 2
+
+    if severity = 3 [
+      if days-infected = 11 [ hospitilize self]
+      if days-infected = 17 [ icu self]
+      if days-infected = 27 [
+        set icus-available icus-available + 1
+        ifelse random-float 100 < 80 [ ; 80% of chance to die
+          ; die
+          type self type "DIED in the ICU!!!\n"
+          set dead? true
+          set hidden? true
+          ask my-links [die]
+        ][
+          set infected? false
+          ;set immune? true
+          set icu? false
+          set hospitalized? false
+        ]
+
+      ]
+    ] ; end severity = 3
+
   ]
 end
+
+
+to hospitilize [ person ]
+  set hospitalized? true
+end
+
+
+to icu [ person ]
+  ask person [
+    ifelse icus-available > 0 [
+      set icu? true
+      set hospitalized? false
+      set icus-available icus-available - 1
+    ][
+      ; die
+      type self type "DIED for the lack of ICUs!!!\n"
+      set dead? true
+      set hidden? true
+      ask my-links [die]
+    ]
+  ]
+end
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 to load-statistics
@@ -186,86 +310,13 @@ end
 ;;;;;;;;
 
 
-to setup-map
-  resize-world -300 300 -240 240
-  set-patch-size 1
-  ask patches [set pcolor white]
-
-  gis:load-coordinate-system "maps/rio_favelas_1_0/setores_rj_recorte.prj"
-  set rj-areas gis:load-dataset "maps/rio_favelas_1_0/setores_rj_recorte.shp"
-
-  gis:set-world-envelope (gis:envelope-of rj-areas)
-
-  gis:set-drawing-color black
-  gis:draw rj-areas 1.
-end
-
-to setup-ties
-  ask turtles with [favela? = true] [
-    create-links-to n-of 4 other turtles with [favela? = true] [
-      hide-link
-    ]
-    create-links-to n-of 2 other turtles with [favela? = false] [
-      hide-link
-    ]
-  ]
-
-  ;; people NOT from the favelas
-  ask turtles with [favela? = false] [
-    create-links-to n-of 4 other turtles with [favela? = false] [
-      hide-link
-    ]
-    create-links-to n-of 2 other turtles with [favela? = true] [
-      hide-link
-    ]
-  ]
-end
 
 
 
-to populate
-  foreach gis:feature-list-of rj-areas [
-    area ->
-    ; Get the population for this state, divided by 10000
-    ; to get a reasonable number
-    ;;;; CHANGE LATER!
-    let pop ( gis:property-value area "population" ) / 100
 
-    let perc_idosos read-from-string ( gis:property-value area "perc_idoso" )
-    ; Get the patches contained by the state. This is slow!
-    ; Using 'gis:intersecting' alone is much faster, but results
-    ; in overlaps as geographic boundaries don't align with  patch boundaries
-    let target-patches ( patches gis:intersecting area ) with [ gis:contained-by? self area ]
 
-    if any? target-patches [
-      ; create turtles in one of the patches
-      create-turtles pop [
-        set shape "circle"
-        set size 0.5
-        set infected? false
-        set immune? false
 
-        ifelse random-float 100 < perc_idosos [
-          ; create old
-          set old? true
-          set color orange
-          move-to one-of target-patches
-        ] [
-          ; create young
-          set old? false
-          set color green
-          move-to one-of target-patches
-        ]
-        ; if live in a favela
-        ifelse gis:property-value area "favelas" = "sim" [ set favela? true ] [ set favela? false ]
-      ]
 
-      ; Get the number of turtles that should be in each target-patch:
-      let avg-turtles round ( pop / count target-patches )
-      if debug? [ type pop type " " type avg-turtles type "\n"  ]
-    ]
-  ]
-end
 
 ;;;; SECONDARY PROCEDURES
 
@@ -281,22 +332,12 @@ to-report read-csv-to-list [ file ]
   report returnList
 end
 
-;;;;;;; TO DISCARD LATER
-
-to color-change
-  ask patches with [ID > 0 ] [
-    ifelse not (population = NOBODY) and (population >= 200) [ gis:set-drawing-color red ] [ gis:set-drawing-color blue ]
-    gis:fill item (ID - 1) gis:feature-list-of rj-areas 2.0
-    gis:set-drawing-color black
-    gis:draw item (ID - 1) gis:feature-list-of rj-areas 1.5
-  ]
-end
 @#$#@#$#@
 GRAPHICS-WINDOW
-694
+644
 10
-1303
-500
+1013
+380
 -1
 -1
 1.0
@@ -306,24 +347,80 @@ GRAPHICS-WINDOW
 1
 1
 0
+0
+0
 1
-1
-1
--300
-300
--240
-240
+-180
+180
+-180
+180
 0
 0
 1
 ticks
 30.0
 
+SLIDER
+57
+94
+265
+127
+num-population
+num-population
+30
+100
+40.0
+1
+1
+people
+HORIZONTAL
+
+SWITCH
+223
+52
+326
+85
+debug?
+debug?
+1
+1
+-1000
+
+SLIDER
+57
+183
+264
+216
+perc-idosos
+perc-idosos
+0
+100
+30.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+56
+138
+263
+171
+perc-favelas
+perc-favelas
+0
+100
+61.0
+1
+1
+%
+HORIZONTAL
+
 BUTTON
-6
-13
-72
-46
+57
+50
+123
+83
 NIL
 setup
 NIL
@@ -337,195 +434,54 @@ NIL
 1
 
 MONITOR
-168
-142
-261
-187
-NIL
-count turtles
+443
+18
+601
+63
+People from the Favelas
+count turtles with [favela? = true]
 17
 1
 11
-
-SLIDER
-8
-61
-180
-94
-num-icus
-num-icus
-0
-1000
-73.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-318
-10
-528
-43
-incubation-time
-incubation-time
-0
-15
-5.0
-1
-1
-days
-HORIZONTAL
-
-SLIDER
-316
-50
-526
-83
-symptoms-duration
-symptoms-duration
-0
-21
-7.0
-1
-1
-days
-HORIZONTAL
-
-SLIDER
-316
-89
-526
-122
-hospitalization-time
-hospitalization-time
-1
-21
-7.0
-1
-1
-days
-HORIZONTAL
-
-SLIDER
-314
-129
-576
-162
-recovery-time-severe-cases
-recovery-time-severe-cases
-1
-28
-21.0
-1
-1
-days
-HORIZONTAL
-
-SLIDER
-314
-167
-562
-200
-recovery-time-mild-cases
-recovery-time-mild-cases
-1
-21
-10.0
-1
-1
-days
-HORIZONTAL
-
-SWITCH
-36
-245
-139
-278
-debug?
-debug?
-1
-1
--1000
-
-SLIDER
-327
-255
-499
-288
-quarentine-level
-quarentine-level
-0
-1
-0.5
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-380
-348
-688
-381
-avg-family-members-favelas
-avg-family-members-favelas
-0
-10
-4.2
-0.1
-1
-people
-HORIZONTAL
-
-SLIDER
-381
-388
-638
-421
-avg-family-members-city
-avg-family-members-city
-0
-10
-2.0
-0.1
-1
-people
-HORIZONTAL
 
 MONITOR
-169
-201
-250
-246
-NIL
-count links
+442
+69
+604
+114
+People not from the Favelas
+count turtles with [favela? = false]
+17
+1
+11
+
+MONITOR
+442
+122
+603
+167
+Average Degree
+count links / count turtles
+17
+1
+11
+
+MONITOR
+1023
+10
+1157
+55
+Infected
+count turtles with [infected?]
 17
 1
 11
 
 BUTTON
-194
-15
-292
-48
-NIL
-infect-first\n
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-119
-15
-182
-48
+136
+51
+208
+84
 NIL
 go
 NIL
@@ -536,25 +492,137 @@ NIL
 NIL
 NIL
 NIL
+0
+
+SLIDER
+59
+225
+263
+258
+#-icus
+#-icus
+0
+100
+3.0
 1
+1
+ICUs
+HORIZONTAL
+
+SLIDER
+59
+274
+264
+307
+#-beds
+#-beds
+0
+100
+100.0
+1
+1
+beds
+HORIZONTAL
+
+MONITOR
+1025
+64
+1156
+109
+Hospitalized
+count turtles with [hospitalized?]
+17
+1
+11
+
+MONITOR
+1026
+122
+1157
+167
+People on ICUs
+count turtles with [icu?]
+17
+1
+11
+
+BUTTON
+318
+128
+381
+161
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
 
 PLOT
-120
-302
-320
-452
-Degree Distribution
-# of Links
-# of Agents
+1038
+190
+1339
+365
+Infected people
+Days
+# of people
+0.0
+90.0
+0.0
+100.0
+true
+true
+"" ""
+PENS
+"Not infected" 1.0 0 -5298144 true "" "plot count turtles with [not infected?]"
+"Infected" 1.0 0 -13345367 true "" "plot count turtles with [infected?]"
+
+MONITOR
+1171
+10
+1319
+55
+ICUs Available
+icus-available
+17
+1
+11
+
+PLOT
+296
+200
+592
+350
+People's statuses
+Days
+# of people
 0.0
 10.0
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
-"default" 1.0 1 -16777216 true "" "histogram [count link-neighbors] of turtles"
+"Hospitalized" 1.0 0 -16777216 true "" "plot count turtles with [hospitalized? and not dead?]"
+"ICUs" 1.0 0 -14439633 true "" "plot count turtles with [icu? and not dead?]"
+"ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
+
+MONITOR
+1171
+66
+1317
+111
+Deads
+count turtles with [dead?]
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -571,11 +639,7 @@ PENS
 
 ## THINGS TO NOTICE
 
-### Number of contacts per person
-
-The number of contacts people have daily is based on [Del Valle, Sara & Hyman, James & Hethcote, Herbert & Eubank, SG. (2007)](https://www.researchgate.net/publication/228649013_Mixing_patterns_between_age_groups_in_social_networks).
-
-The agents in this model are closely related to a group of people with whom they interact the most.
+(suggested things for the user to notice while running the model)
 
 ## THINGS TO TRY
 
@@ -776,6 +840,25 @@ Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300
 Rectangle -7500403 true true 127 79 172 94
 Polygon -7500403 true true 195 90 240 150 225 180 165 105
 Polygon -7500403 true true 105 90 60 150 75 180 135 105
+
+person doctor
+false
+0
+Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Polygon -13345367 true false 135 90 150 105 135 135 150 150 165 135 150 105 165 90
+Polygon -7500403 true true 105 90 60 195 90 210 135 105
+Polygon -7500403 true true 195 90 240 195 210 210 165 105
+Circle -7500403 true true 110 5 80
+Rectangle -7500403 true true 127 79 172 94
+Polygon -1 true false 105 90 60 195 90 210 114 156 120 195 90 270 210 270 180 195 186 155 210 210 240 195 195 90 165 90 150 150 135 90
+Line -16777216 false 150 148 150 270
+Line -16777216 false 196 90 151 149
+Line -16777216 false 104 90 149 149
+Circle -1 true false 180 0 30
+Line -16777216 false 180 15 120 15
+Line -16777216 false 150 195 165 195
+Line -16777216 false 150 240 165 240
+Line -16777216 false 150 150 165 150
 
 plant
 false
