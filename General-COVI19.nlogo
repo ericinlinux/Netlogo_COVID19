@@ -5,6 +5,9 @@ globals [
   contact-daily
   contagion-prob-daily
   icus-available
+
+  deads-virus
+  deads-infra
 ]
 
 patches-own [
@@ -20,6 +23,7 @@ turtles-own[
   dead?
   severity    ;; level of severity 0 (Asymptomatic) 1 (Mild) 2 (Severe) 3 (Critical)
   days-infected
+  #-transmitted
 
   num-contacts
   prob-spread
@@ -40,6 +44,8 @@ end
 to setup-globals
   load-statistics
   set icus-available #-icus
+  set deads-virus 0
+  set deads-infra 0
 end
 
 ;;;;
@@ -60,6 +66,7 @@ to populate
     set hospitalized? false
     set icu? false
     set dead? false
+    set #-transmitted 0
 
     ifelse random-float 100 < perc-idosos [
       ; create old
@@ -236,6 +243,7 @@ to disease-development
       if days-infected = 11 [ hospitilize self]
       if days-infected = 27 [
         set infected? false
+        set hospitalized? false
         set immune? true
       ]
     ] ; end severity = 2
@@ -249,8 +257,10 @@ to disease-development
           ; die
           type self type "DIED in the ICU!!!\n"
           set dead? true
+          set hospitalized? false
           set hidden? true
           ask my-links [die]
+          set deads-virus deads-virus + 1 ; deads because of the virus
         ][
           set infected? false
           ;set immune? true
@@ -280,18 +290,13 @@ to icu [ person ]
       ; die
       type self type "DIED for the lack of ICUs!!!\n"
       set dead? true
+      set hospitalized? false
       set hidden? true
       ask my-links [die]
+      set deads-infra deads-infra + 1 ; deads because of lack of infrastructure
     ]
   ]
 end
-
-
-
-
-
-
-
 
 
 
@@ -334,9 +339,9 @@ end
 
 @#$#@#$#@
 GRAPHICS-WINDOW
-644
+616
 10
-1013
+985
 380
 -1
 -1
@@ -361,25 +366,25 @@ ticks
 30.0
 
 SLIDER
-57
-94
-265
-127
+9
+56
+217
+89
 num-population
 num-population
 30
 100
-40.0
+60.0
 1
 1
 people
 HORIZONTAL
 
 SWITCH
-223
-52
-326
-85
+16
+281
+119
+314
 debug?
 debug?
 1
@@ -387,40 +392,40 @@ debug?
 -1000
 
 SLIDER
-57
-183
-264
+9
+145
 216
+178
 perc-idosos
 perc-idosos
 0
 100
-30.0
+40.0
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-56
-138
-263
-171
+8
+100
+215
+133
 perc-favelas
 perc-favelas
 0
 100
-61.0
+60.0
 1
 1
 %
 HORIZONTAL
 
 BUTTON
-57
-50
-123
-83
+9
+12
+75
+45
 NIL
 setup
 NIL
@@ -467,21 +472,21 @@ count links / count turtles
 11
 
 MONITOR
-1023
-10
-1157
-55
-Infected
-count turtles with [infected?]
-17
+285
+18
+419
+63
+Infected (%)
+count turtles with [infected?] * 100 / count turtles
+2
 1
 11
 
 BUTTON
-136
-51
-208
-84
+88
+13
+160
+46
 NIL
 go
 NIL
@@ -495,10 +500,10 @@ NIL
 0
 
 SLIDER
-59
-225
-263
-258
+11
+187
+215
+220
 #-icus
 #-icus
 0
@@ -510,10 +515,10 @@ ICUs
 HORIZONTAL
 
 SLIDER
-59
-274
-264
-307
+11
+236
+216
+269
 #-beds
 #-beds
 0
@@ -525,9 +530,9 @@ beds
 HORIZONTAL
 
 MONITOR
-1025
+997
 64
-1156
+1128
 109
 Hospitalized
 count turtles with [hospitalized?]
@@ -536,9 +541,9 @@ count turtles with [hospitalized?]
 11
 
 MONITOR
-1026
+998
 122
-1157
+1129
 167
 People on ICUs
 count turtles with [icu?]
@@ -547,10 +552,10 @@ count turtles with [icu?]
 11
 
 BUTTON
-318
-128
-381
-161
+170
+14
+233
+47
 NIL
 go
 T
@@ -564,10 +569,10 @@ NIL
 0
 
 PLOT
-1038
-190
-1339
-365
+1001
+185
+1317
+360
 Infected people
 Days
 # of people
@@ -583,9 +588,9 @@ PENS
 "Infected" 1.0 0 -13345367 true "" "plot count turtles with [infected?]"
 
 MONITOR
-1171
+1140
 10
-1319
+1288
 55
 ICUs Available
 icus-available
@@ -614,12 +619,34 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-1171
+1140
 66
-1317
+1286
 111
-Deads
+Deaths
 count turtles with [dead?]
+17
+1
+11
+
+MONITOR
+1142
+124
+1226
+169
+Deaths (Infra)
+deads-infra
+17
+1
+11
+
+MONITOR
+1235
+124
+1324
+169
+Deaths (Virus)
+deads-virus
 17
 1
 11
