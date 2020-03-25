@@ -1,7 +1,6 @@
 extensions [ csv ]
 
 globals [
-
   contact-daily
   contagion-prob-daily
   icus-available
@@ -21,7 +20,6 @@ turtles-own[
   hospitalized?
   icu?
   dead?
-  healed?
   severity    ;; level of severity 0 (Asymptomatic) 1 (Mild) 2 (Severe) 3 (Critical)
   days-infected
   #-transmitted
@@ -67,7 +65,6 @@ to populate
     set hospitalized? false
     set icu? false
     set dead? false
-    set healed? false
     set #-transmitted 0
 
     ifelse random-float 100 < perc-idosos [
@@ -88,15 +85,15 @@ to populate
     ]
   ]
 
-  layout-circle turtles  140
+  layout-circle turtles  120
   ;layout-circle turtles with [ favela? ] 100
   ask turtles with [favela?] [
     set heading 90
-    fd 150
+    fd 160
   ]
   ask turtles with [not favela?] [
     set heading 270
-    fd 150
+    fd 160
   ]
 end
 
@@ -175,13 +172,13 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to go
-  if ticks = 90 [stop]
+  ;if ticks = 120 [stop]
+  if count turtles with [infected? and not dead?] = 0 [stop]
   disease-development
   interact-with-others
 
   tick
 end
-
 
 ; interactions between infected people
 to interact-with-others
@@ -268,7 +265,7 @@ to disease-development
         set icus-available icus-available + 1
         ifelse random-float 100 < 80 [ ; 80% of chance to die
           ; die
-          type self type "DIED in the ICU!!!\n"
+          if debug? [type self type "DIED in the ICU!!!\n"]
           set dead? true
           set hospitalized? false
           ;set hidden? true
@@ -303,7 +300,7 @@ to icu [ person ]
       set icus-available icus-available - 1
     ][
       ; die
-      type self type "DIED for the lack of ICUs!!!\n"
+      if debug? [type self type "DIED for the lack of ICUs!!!\n"]
       set dead? true
       set hospitalized? false
       ;set hidden? true
@@ -329,12 +326,6 @@ end
 
 
 ;;;;;;;;
-
-
-
-
-
-
 
 
 
@@ -634,9 +625,9 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-860
+770
 350
-1006
+916
 395
 Total Deaths
 count turtles with [dead?]
@@ -645,9 +636,9 @@ count turtles with [dead?]
 11
 
 MONITOR
-862
+772
 402
-1006
+916
 447
 Deaths (Lack of ICUs)
 deads-infra
@@ -656,9 +647,9 @@ deads-infra
 11
 
 MONITOR
-862
+772
 455
-1007
+917
 500
 Deaths (Virus)
 deads-virus
@@ -690,6 +681,21 @@ initial-infected
 1
 1
 person(s)
+HORIZONTAL
+
+SLIDER
+15
+402
+236
+435
+hazard-effect-on-favelas
+hazard-effect-on-favelas
+0
+500
+120.0
+1
+1
+%
 HORIZONTAL
 
 @#$#@#$#@
