@@ -21,6 +21,7 @@ turtles-own[
   hospitalized?
   icu?
   dead?
+  healed?
   severity    ;; level of severity 0 (Asymptomatic) 1 (Mild) 2 (Severe) 3 (Critical)
   days-infected
   #-transmitted
@@ -50,7 +51,7 @@ end
 
 ;;;;
 to setup-map
-  resize-world -180 180 -180 180
+  resize-world -300 300 -160 160
   set-patch-size 1
   ;ask patches [set pcolor white]
 end
@@ -66,6 +67,7 @@ to populate
     set hospitalized? false
     set icu? false
     set dead? false
+    set healed? false
     set #-transmitted 0
 
     ifelse random-float 100 < perc-idosos [
@@ -86,7 +88,16 @@ to populate
     ]
   ]
 
-  layout-circle turtles 150
+  layout-circle turtles  140
+  ;layout-circle turtles with [ favela? ] 100
+  ask turtles with [favela?] [
+    set heading 90
+    fd 150
+  ]
+  ask turtles with [not favela?] [
+    set heading 270
+    fd 150
+  ]
 end
 
 ;;;;
@@ -112,7 +123,7 @@ to setup-ties
 end
 
 to infect-first
-   infect one-of turtles
+   infect n-of initial-infected turtles
 end
 
 
@@ -158,7 +169,7 @@ to infect [ person ]
     set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
     set prob-spread item days-infected (item severity contagion-prob-daily)
     set shape "person doctor"
-    set size 30
+    set size 18
   ]
 end
 
@@ -185,7 +196,7 @@ to interact-with-others
 
     ifelse numlinks >= num-contacts [  ; if the number of contacts is bigger than the number of friends/family
       ask n-of numlinks link-neighbors [
-        if not infected? [
+        if not infected? and not immune?[
           if random-float 100 <= contagion-probability [
             if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
@@ -196,7 +207,7 @@ to interact-with-others
       ask link-neighbors [
         if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
         if debug? [type "Contagion probability: " type contagion-probability type "\n"]
-        if not infected? [
+        if not infected? and not immune? [
           if debug? [type "Neighbor not infected: " type self type "\n"]
           if random-float 100 <= contagion-probability [
             infect self
@@ -210,7 +221,7 @@ to interact-with-others
 
         if debug? [type self type "\n"]
 
-        if not infected? [
+        if not infected? and not immune? [
           if random-float 100 <= contagion-probability [
             if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
@@ -236,6 +247,7 @@ to disease-development
       if days-infected = 27 [
         set infected? false
         set immune? true
+        set shape "face happy"
       ]
     ] ; end severity = 0 or 1
 
@@ -245,6 +257,7 @@ to disease-development
         set infected? false
         set hospitalized? false
         set immune? true
+        set shape "face happy"
       ]
     ] ; end severity = 2
 
@@ -258,14 +271,16 @@ to disease-development
           type self type "DIED in the ICU!!!\n"
           set dead? true
           set hospitalized? false
-          set hidden? true
+          ;set hidden? true
+          set shape "x"
           ask my-links [die]
           set deads-virus deads-virus + 1 ; deads because of the virus
         ][
           set infected? false
-          ;set immune? true
+          set immune? true
           set icu? false
           set hospitalized? false
+          set shape "face happy"
         ]
 
       ]
@@ -291,7 +306,8 @@ to icu [ person ]
       type self type "DIED for the lack of ICUs!!!\n"
       set dead? true
       set hospitalized? false
-      set hidden? true
+      ;set hidden? true
+      set shape "x"
       ask my-links [die]
       set deads-infra deads-infra + 1 ; deads because of lack of infrastructure
     ]
@@ -336,13 +352,12 @@ to-report read-csv-to-list [ file ]
   file-close
   report returnList
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 616
 10
-985
-380
+1225
+340
 -1
 -1
 1.0
@@ -355,10 +370,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--180
-180
--180
-180
+-300
+300
+-160
+160
 0
 0
 1
@@ -374,7 +389,7 @@ num-population
 num-population
 30
 100
-60.0
+100.0
 1
 1
 people
@@ -530,10 +545,10 @@ beds
 HORIZONTAL
 
 MONITOR
-997
-64
-1128
-109
+615
+347
+746
+392
 Hospitalized
 count turtles with [hospitalized?]
 17
@@ -541,10 +556,10 @@ count turtles with [hospitalized?]
 11
 
 MONITOR
-998
-122
-1129
-167
+616
+401
+747
+446
 People on ICUs
 count turtles with [icu?]
 17
@@ -569,10 +584,10 @@ NIL
 0
 
 PLOT
-1001
-185
-1317
-360
+307
+333
+602
+494
 Infected people
 Days
 # of people
@@ -588,10 +603,10 @@ PENS
 "Infected" 1.0 0 -13345367 true "" "plot count turtles with [infected?]"
 
 MONITOR
-1140
-10
-1288
-55
+617
+458
+749
+503
 ICUs Available
 icus-available
 17
@@ -599,10 +614,10 @@ icus-available
 11
 
 PLOT
-296
-200
-592
-350
+307
+174
+603
+324
 People's statuses
 Days
 # of people
@@ -619,37 +634,63 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-1140
-66
-1286
-111
-Deaths
+860
+350
+1006
+395
+Total Deaths
 count turtles with [dead?]
 17
 1
 11
 
 MONITOR
-1142
-124
-1226
-169
-Deaths (Infra)
+862
+402
+1006
+447
+Deaths (Lack of ICUs)
 deads-infra
 17
 1
 11
 
 MONITOR
-1235
-124
-1324
-169
+862
+455
+1007
+500
 Deaths (Virus)
 deads-virus
 17
 1
 11
+
+MONITOR
+283
+81
+420
+126
+Healed (%)
+count turtles with [immune?] * 100 / count turtles
+2
+1
+11
+
+SLIDER
+35
+350
+241
+383
+initial-infected
+initial-infected
+1
+5
+1.0
+1
+1
+person(s)
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
