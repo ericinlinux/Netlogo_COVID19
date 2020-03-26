@@ -5,8 +5,8 @@ globals [
   contagion-prob-daily
   icus-available
 
-  deads-virus
-  deads-infra
+  deaths-virus
+  deaths-infra
 ]
 
 patches-own [
@@ -44,8 +44,8 @@ end
 to setup-globals
   load-statistics
   set icus-available #-icus
-  set deads-virus 0
-  set deads-infra 0
+  set deaths-virus 0
+  set deaths-infra 0
 end
 
 ;;;;
@@ -81,7 +81,7 @@ to populate
     ; if live in a favela
     ifelse random-float 100 < perc-favelas [
       set favela? true
-      set shape "default"
+      set shape "lander"
     ] [
       set favela? false
     ]
@@ -101,21 +101,21 @@ end
 
 ;;;;
 to setup-ties
-  ask turtles with [favela? = true] [
-    create-links-to n-of 2 other turtles with [favela? = true] [
+  ask turtles with [favela?] [
+    create-links-to n-of #-intra-connections other turtles with [favela?] [
       ;hide-link
     ]
-    create-links-to n-of 1 other turtles with [favela? = false] [
+    create-links-to n-of #-inter-connections other turtles with [not favela?] [
       ;hide-link
     ]
   ]
 
   ;; people NOT from the favelas
-  ask turtles with [favela? = false] [
-    create-links-to n-of 2 other turtles with [favela? = false] [
+  ask turtles with [not favela?] [
+    create-links-to n-of #-intra-connections other turtles with [not favela?] [
       ;hide-link
     ]
-    create-links-to n-of 1 other turtles with [favela? = true] [
+    create-links-to n-of #-inter-connections other turtles with [favela?] [
       ;hide-link
     ]
   ]
@@ -177,7 +177,7 @@ end
 to go
   ;if ticks = 120 [stop]
   if count turtles with [infected? or hospitalized? or icu?] = 0 [stop]
-  type count turtles with [infected?] type " " type count turtles with [hospitalized?] type " " type count turtles with [icu?] type "\n"
+  if debug? [type count turtles with [infected?] type " " type count turtles with [hospitalized?] type " " type count turtles with [icu?] type "\n"]
   disease-development
   interact-with-others
 
@@ -190,6 +190,9 @@ to interact-with-others
   ask turtles with [infected? and not dead?] [
     let numlinks count my-links
     let contagion-probability prob-spread
+
+    let intra 2 * num-contacts / 3 ;; contacts with people from the same group
+    let inter num-contacts / 3;; contacts with people from the other group
 
     if debug? [type self type " has " type numlinks type " links and " type num-contacts type " contacts\n"]
 
@@ -284,7 +287,7 @@ to disease-development
           ;set hidden? true
           set shape "x"
           ask my-links [die]
-          set deads-virus deads-virus + 1 ; deads because of the virus
+          set deaths-virus deaths-virus + 1 ; deaths because of the virus
         ][
           set hospitalized? false
           set icu? false
@@ -301,7 +304,7 @@ to disease-development
 end
 
 
-to hospitilize [ person ]
+to hospitilize [ person ] ; this may be adjusted in the future for cases when the number of beds is not suficient
   set hospitalized? true
 end
 
@@ -323,17 +326,13 @@ to icu [ person ]
       ;set hidden? true
       set shape "x"
       ask my-links [die]
-      set deads-infra deads-infra + 1 ; deads because of lack of infrastructure
+      set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
     ]
   ]
 end
 
 
-
-
-
-
-
+;;;; STATISTICS OF NUMBER OF CONTACTS AND CONTAGION PROBABILITY
 to load-statistics
   let file1 "./data/contacts_daily.csv"
   let file2 "./data/contagion_chance.csv"
@@ -462,10 +461,10 @@ NIL
 1
 
 MONITOR
-443
-18
-601
-63
+452
+16
+610
+61
 People from the Favelas
 count turtles with [favela? = true]
 17
@@ -490,15 +489,15 @@ MONITOR
 167
 Average Degree
 count links / count turtles
-17
+2
 1
 11
 
 MONITOR
-285
-18
-419
-63
+313
+16
+447
+61
 Infected (%)
 count turtles with [infected?] * 100 / count turtles
 2
@@ -659,7 +658,7 @@ MONITOR
 916
 447
 Deaths (Lack of ICUs)
-deads-infra
+deaths-infra
 17
 1
 11
@@ -670,7 +669,7 @@ MONITOR
 917
 500
 Deaths (Virus)
-deads-virus
+deaths-virus
 17
 1
 11
@@ -695,7 +694,7 @@ initial-infected
 initial-infected
 1
 5
-1.0
+2.0
 1
 1
 person(s)
@@ -737,7 +736,7 @@ MONITOR
 446
 Never infected (%)
 count turtles with [never-infected?] * 100 / count turtles
-17
+2
 1
 11
 
@@ -746,16 +745,56 @@ MONITOR
 455
 1297
 500
-Deads (%)
+Deaths (%)
 count turtles with [dead?] * 100 / count turtles
 2
 1
 11
 
+TEXTBOX
+1070
+23
+1110
+41
+Favela
+11
+0.0
+0
+
+SLIDER
+224
+73
+261
+275
+#-inter-connections
+#-inter-connections
+1
+20
+3.0
+1
+1
+person(s)
+VERTICAL
+
+SLIDER
+267
+73
+304
+274
+#-intra-connections
+#-intra-connections
+1
+20
+6.0
+1
+1
+person(s)
+VERTICAL
+
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This is a general model for the transmission of COVID-19 in poor communities known in Brazil as favelas. The model is created by a team of specialists in infectology, virology, computer science, logistics, veterinary among other expertises and aims to simulate a generic scenario for the spread of the virus under normal conditions.
 
 ## HOW IT WORKS
 
@@ -938,6 +977,11 @@ Rectangle -7500403 true true 45 120 255 285
 Rectangle -16777216 true false 120 210 180 285
 Polygon -7500403 true true 15 120 150 15 285 120
 Line -16777216 false 30 120 270 120
+
+lander
+true
+0
+Polygon -7500403 true true 45 75 150 30 255 75 285 225 240 225 240 195 210 195 210 225 165 225 165 195 135 195 135 225 90 225 90 195 60 195 60 225 15 225 45 75
 
 leaf
 false
