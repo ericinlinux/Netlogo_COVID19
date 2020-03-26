@@ -198,7 +198,7 @@ to interact-with-others
 
     let sTurtle self
 
-    ifelse numlinks >= num-contacts [  ; if the number of contacts is bigger than the number of friends/family
+    ifelse numlinks >= intra [  ; if the number of contacts is bigger than the number of friends/family
       ask n-of numlinks link-neighbors [
         ;
         if not infected? and not immune? and not dead? [
@@ -223,9 +223,34 @@ to interact-with-others
           ]
         ]
       ]
+      ;;;; some contacts will be repeated
+      let contacts-left intra - count link-neighbors
+      let n-iterations 0
+      while [contacts-left > 0] [
+        ifelse contacts-left >= (count link-neighbors) [
+          set n-iterations count link-neighbors
+        ][
+          set n-iterations contacts-left
+        ]
+
+        ask n-of n-iterations link-neighbors [
+          if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
+          if debug? [type "Contagion probability: " type contagion-probability type "\n"]
+          ;
+          if not infected? and not immune? and not dead? [
+            if debug? [type "Neighbor not infected: " type self type "\n"]
+            if random-float 100 <= contagion-probability [
+              if debug? [type sTurtle type " infected " type self type "\n"]
+              infect self
+              ask sTurtle [set #-transmitted #-transmitted + 1]
+            ]
+          ]
+        ]
+        set contacts-left contacts-left - count link-neighbors
+      ]
       ; infect not close ties
-      let num-others num-contacts - numlinks ; contacts to make besides the close ones done before
-      ask n-of num-others turtles with [ not member? sTurtle link-neighbors ][
+      ;let num-others num-contacts - numlinks ; contacts to make besides the close ones done before
+      ask n-of inter turtles with [ not member? sTurtle link-neighbors ][
 
         if debug? [type self type "\n"]
 
@@ -764,7 +789,7 @@ Favela
 SLIDER
 224
 73
-261
+257
 275
 #-inter-connections
 #-inter-connections
@@ -779,7 +804,7 @@ VERTICAL
 SLIDER
 267
 73
-304
+300
 274
 #-intra-connections
 #-intra-connections
