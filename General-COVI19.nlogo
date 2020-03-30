@@ -1,9 +1,14 @@
+;;;;;;
+
 extensions [ csv ]
 
 globals [
   contact-daily
   contagion-prob-daily
-  icus-available
+  #-icus-available
+
+  #-icus-public
+  #-icus-private
 
   deaths-virus
   deaths-infra
@@ -22,11 +27,17 @@ turtles-own[
   icu?
   dead?
   severity    ;; level of severity 0 (Asymptomatic) 1 (Mild) 2 (Severe) 3 (Critical)
+
   days-infected
   #-transmitted
 
   num-contacts
   prob-spread
+
+  ;;; interventions
+  isolated?  ;; agent in quarentine
+
+  icu-private? ;; if the agent goes to the private ICU
 
 ]
 
@@ -43,16 +54,20 @@ end
 ;;;;
 to setup-globals
   load-statistics
-  set icus-available #-icus
+  ; distribution of the ICUs
+  set #-icus-available #-icus
+  set #-icus-public #-icus * perc-icus-public / 100
+  set #-icus-private #-icus * (100 - perc-icus-public) / 100
+
   set deaths-virus 0
   set deaths-infra 0
 end
 
 ;;;;
 to setup-map
-  resize-world -300 300 -160 160
+  resize-world -310 310 -280 280
   set-patch-size 1
-  ;ask patches [set pcolor white]
+  ask patches with [pxcor < 0 ] [set pcolor white]
 end
 
 ;;;;
@@ -60,7 +75,7 @@ to populate
   ; create turtles
   create-turtles num-population [
     set shape "circle"
-    set size 10
+    set size 6
     set infected? false
     set immune? false
     set hospitalized? false
@@ -68,8 +83,9 @@ to populate
     set dead? false
     set never-infected? true
     set #-transmitted 0
+    set isolated? false
 
-    ifelse random-float 100 < perc-idosos [
+    ifelse random-float 100 < perc-idosos [ ; if old or young
       ; create old
       set old? true
       set color orange
@@ -82,20 +98,26 @@ to populate
     ifelse random-float 100 < perc-favelas [
       set favela? true
       set shape "lander"
+      ;; which health system? favela-perc-private & non-perc-private
+      ifelse favela-perc-private > random 100 [ set icu-private? true ] [ set icu-private? false ] ;;
     ] [
       set favela? false
+      ifelse nonfavela-perc-private > random 100 [ set icu-private? true ] [ set icu-private? false ]
     ]
   ]
 
-  layout-circle turtles  120
+  ;layout-circle turtles  120
   ;layout-circle turtles with [ favela? ] 100
   ask turtles with [favela?] [
-    set heading 90
-    fd 160
+    ;let random-x random min-pxcor 0
+    move-to one-of patches with [pcolor = black and not any? turtles-here]
+    ;set heading 90
+    ;fd 160
   ]
   ask turtles with [not favela?] [
-    set heading 270
-    fd 160
+    ;set heading 270
+    ;fd 160
+    move-to one-of patches with [pcolor = white and not any? turtles-here]
   ]
 end
 
@@ -103,20 +125,20 @@ end
 to setup-ties
   ask turtles with [favela?] [
     create-links-to n-of #-intra-connections other turtles with [favela?] [
-      ;hide-link
+      hide-link
     ]
     create-links-to n-of #-inter-connections other turtles with [not favela?] [
-      ;hide-link
+      hide-link
     ]
   ]
 
   ;; people NOT from the favelas
   ask turtles with [not favela?] [
     create-links-to n-of #-intra-connections other turtles with [not favela?] [
-      ;hide-link
+      hide-link
     ]
     create-links-to n-of #-inter-connections other turtles with [favela?] [
-      ;hide-link
+      hide-link
     ]
   ]
 end
@@ -209,11 +231,8 @@ to interact-with-others
           ]
         ]
       ]
-    ][ ; less close contacts
+    ][ ; less close contacts than daily contacts
       ask link-neighbors [
-        if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
-        if debug? [type "Contagion probability: " type contagion-probability type "\n"]
-        ;
         if not infected? and not immune? and not dead? [
           if debug? [type "Neighbor not infected: " type self type "\n"]
           if random-float 100 <= contagion-probability [
@@ -250,7 +269,7 @@ to interact-with-others
       ]
       ; infect not close ties
       ;let num-others num-contacts - numlinks ; contacts to make besides the close ones done before
-      ask n-of inter turtles with [ not member? sTurtle link-neighbors ][
+      ask n-of inter turtles with [ not (member? sTurtle link-neighbors) and not (isolated?) ][
 
         if debug? [type self type "\n"]
 
@@ -299,7 +318,10 @@ to disease-development
       if days-infected = 11 [ hospitilize self]
       if days-infected = 17 [ icu self]
       if days-infected = 27 [
-        set icus-available icus-available + 1
+        ; free icus
+        set #-icus-available #-icus-available + 1
+        ifelse icu-private? [ set #-icus-private #-icus-private + 1 ] [set #-icus-public #-icus-public + 1 ]
+        ; chance of death
         ifelse random-float 100 < 80 [ ; 80% of chance to die
           ; die
           if debug? [type self type "DIED in the ICU!!!\n"]
@@ -331,27 +353,52 @@ end
 
 to hospitilize [ person ] ; this may be adjusted in the future for cases when the number of beds is not suficient
   set hospitalized? true
+
 end
 
 
 to icu [ person ]
   ask person [
-    ifelse icus-available > 0 [
-      set icu? true
-      set hospitalized? false
-      set icus-available icus-available - 1
-    ][
-      ; die
-      if debug? [type self type "DIED for the lack of ICUs!!!\n"]
-      set hospitalized? false
-      set icu? false
-      set infected? false
+    ; if icu is private
+    ifelse icu-private? [   ;;; private
+      ifelse #-icus-private > 0 [
+        set icu? true
+        set hospitalized? false
+        set #-icus-available #-icus-available - 1
+        set #-icus-private #-icus-private - 1
+      ][
+        ; die
+        if debug? [type self type "DIED for the lack of ICUs!!!\n"]
+        set hospitalized? false
+        set icu? false
+        set infected? false
 
-      set dead? true
-      ;set hidden? true
-      set shape "x"
-      ask my-links [die]
-      set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
+        set dead? true
+        ;set hidden? true
+        set shape "x"
+        ask my-links [die]
+        set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
+      ]
+    ][
+      ; if icu is public
+      ifelse #-icus-public > 0 [
+        set icu? true
+        set hospitalized? false
+        set #-icus-available #-icus-available - 1
+        set #-icus-public #-icus-public - 1
+      ][
+        ; die
+        if debug? [type self type "DIED for the lack of ICUs!!!\n"]
+        set hospitalized? false
+        set icu? false
+        set infected? false
+
+        set dead? true
+        ;set hidden? true
+        set shape "x"
+        ask my-links [die]
+        set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
+      ]
     ]
   ]
 end
@@ -367,7 +414,20 @@ end
 
 
 ;;;;;;;;
+;; ISOLATION
 
+to isolate-perc
+  let half-pop count turtles * perc-isolated / 100
+  ask n-of half-pop turtles with [ not hospitalized? and not icu? and not dead? ] [
+    set isolated? true
+  ]
+end
+
+to isolate-elderly
+  ask turtles with [ old? ] [
+    set isolated? true
+  ]
+end
 
 
 
@@ -386,10 +446,10 @@ to-report read-csv-to-list [ file ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-616
+811
 10
-1225
-340
+1440
+580
 -1
 -1
 1.0
@@ -402,10 +462,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--300
-300
--160
-160
+-310
+310
+-280
+280
 0
 0
 1
@@ -413,25 +473,25 @@ ticks
 30.0
 
 SLIDER
-9
+12
 56
-217
+208
 89
 num-population
 num-population
-30
-1000
-1000.0
-1
+100
+10000
+5400.0
+100
 1
 people
 HORIZONTAL
 
 SWITCH
-16
-281
-119
-314
+13
+343
+116
+376
 debug?
 debug?
 1
@@ -441,13 +501,13 @@ debug?
 SLIDER
 9
 145
-216
+205
 178
 perc-idosos
 perc-idosos
 0
 100
-40.0
+30.0
 1
 1
 %
@@ -456,13 +516,13 @@ HORIZONTAL
 SLIDER
 8
 100
-215
+205
 133
 perc-favelas
 perc-favelas
 0
 100
-60.0
+64.0
 1
 1
 %
@@ -486,10 +546,10 @@ NIL
 1
 
 MONITOR
-452
-16
-610
-61
+465
+418
+623
+463
 People from the Favelas
 count turtles with [favela? = true]
 17
@@ -497,10 +557,10 @@ count turtles with [favela? = true]
 11
 
 MONITOR
-442
-69
-604
-114
+455
+471
+617
+516
 People not from the Favelas
 count turtles with [favela? = false]
 17
@@ -508,10 +568,10 @@ count turtles with [favela? = false]
 11
 
 MONITOR
-442
-122
-603
-167
+455
+524
+616
+569
 Average Degree
 count links / count turtles
 2
@@ -519,10 +579,10 @@ count links / count turtles
 11
 
 MONITOR
-313
-16
-447
-61
+308
+476
+442
+521
 Infected (%)
 count turtles with [infected?] * 100 / count turtles
 2
@@ -549,23 +609,23 @@ NIL
 SLIDER
 11
 187
-215
+204
 220
 #-icus
 #-icus
 0
 100
-10.0
+20.0
 1
 1
 ICUs
 HORIZONTAL
 
 SLIDER
-11
-236
-216
-269
+431
+588
+623
+621
 #-beds
 #-beds
 0
@@ -577,10 +637,10 @@ beds
 HORIZONTAL
 
 MONITOR
-615
-347
-746
-392
+647
+353
+778
+398
 Hospitalized
 count turtles with [hospitalized?]
 17
@@ -588,10 +648,10 @@ count turtles with [hospitalized?]
 11
 
 MONITOR
-616
-401
-747
-446
+648
+407
+779
+452
 People on ICUs
 count turtles with [icu?]
 17
@@ -616,10 +676,10 @@ NIL
 0
 
 PLOT
-307
-333
-602
-494
+466
+171
+761
+332
 Infected people
 Days
 # of people
@@ -636,21 +696,21 @@ PENS
 "Dead" 1.0 0 -2674135 true "" "plot count turtles with [dead?]"
 
 MONITOR
-617
-458
-749
-503
-ICUs Available
-icus-available
+649
+464
+793
+509
+ICUs Available (Total)
+#-icus-available
 17
 1
 11
 
 PLOT
-307
-174
-603
-324
+466
+10
+762
+160
 People's statuses
 Days
 # of people
@@ -667,10 +727,10 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-770
-350
-916
-395
+294
+169
+440
+214
 Total Deaths
 count turtles with [dead?]
 17
@@ -678,10 +738,10 @@ count turtles with [dead?]
 11
 
 MONITOR
-772
-402
-916
-447
+270
+372
+414
+417
 Deaths (Lack of ICUs)
 deaths-infra
 17
@@ -689,10 +749,10 @@ deaths-infra
 11
 
 MONITOR
-772
-455
-917
-500
+270
+425
+415
+470
 Deaths (Virus)
 deaths-virus
 17
@@ -700,10 +760,10 @@ deaths-virus
 11
 
 MONITOR
-1163
-348
-1300
-393
+317
+217
+454
+262
 Healed (%)
 count turtles with [immune?] * 100 / count turtles
 2
@@ -711,10 +771,10 @@ count turtles with [immune?] * 100 / count turtles
 11
 
 SLIDER
-15
-332
-221
-365
+13
+386
+187
+419
 initial-infected
 initial-infected
 1
@@ -726,39 +786,21 @@ person(s)
 HORIZONTAL
 
 MONITOR
-934
-350
-1132
-395
+263
+94
+461
+139
 Average transmission
-sum [#-transmitted] of turtles / count turtles
+sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]
 2
 1
 11
 
-PLOT
-13
-376
-268
-497
-Average Transmission
-NIL
-NIL
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot sum [#-transmitted] of turtles / count turtles"
-
 MONITOR
-1163
-401
-1298
-446
+317
+270
+452
+315
 Never infected (%)
 count turtles with [never-infected?] * 100 / count turtles
 2
@@ -766,10 +808,10 @@ count turtles with [never-infected?] * 100 / count turtles
 11
 
 MONITOR
-1164
-455
-1297
-500
+318
+324
+451
+369
 Deaths (%)
 count turtles with [dead?] * 100 / count turtles
 2
@@ -777,44 +819,172 @@ count turtles with [dead?] * 100 / count turtles
 11
 
 TEXTBOX
-1070
-23
-1110
-41
+1295
+30
+1335
+48
 Favela
 11
 0.0
 0
 
 SLIDER
-224
-73
-257
-275
+12
+426
+214
+459
 #-inter-connections
 #-inter-connections
 1
 20
-3.0
+2.0
 1
 1
 person(s)
-VERTICAL
+HORIZONTAL
 
 SLIDER
-267
-73
-300
-274
+21
+464
+256
+497
 #-intra-connections
 #-intra-connections
 1
 20
-6.0
+4.0
 1
 1
 person(s)
-VERTICAL
+HORIZONTAL
+
+MONITOR
+307
+527
+434
+572
+# of people infected
+count turtles with [infected?]
+17
+1
+11
+
+CHOOSER
+1220
+587
+1413
+632
+interventions
+interventions
+"No interventions" "Quarentine 100%" "Quarentine 50%" "Quarentine elderly only"
+0
+
+SLIDER
+12
+228
+202
+261
+perc-icus-public
+perc-icus-public
+0
+100
+30.0
+1
+1
+%
+HORIZONTAL
+
+MONITOR
+648
+516
+791
+561
+ICUs Available (Public)
+#-icus-public
+17
+1
+11
+
+MONITOR
+646
+571
+792
+616
+ICUs Available (Private)
+#-icus-private
+17
+1
+11
+
+SLIDER
+29
+539
+237
+572
+favela-perc-private
+favela-perc-private
+0
+100
+10.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+28
+582
+237
+615
+nonfavela-perc-private
+nonfavela-perc-private
+0
+100
+80.0
+1
+1
+%
+HORIZONTAL
+
+TEXTBOX
+297
+17
+447
+35
+Isolations scenarios\n
+14
+13.0
+1
+
+SLIDER
+19
+283
+191
+316
+risk-rate-favela
+risk-rate-favela
+100
+200
+120.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+144
+336
+316
+369
+perc-isolated
+perc-isolated
+0
+100
+50.0
+1
+1
+%
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -851,7 +1021,7 @@ This is a general model for the transmission of COVID-19 in poor communities kno
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+This model was developed by a team of researchers, health professionals, and members of the Brazilian Army. The main programmer and modeller is Eric Araújo (eric@ufla.br), to whom you could send requests for clarification or questions regarding the model.
 @#$#@#$#@
 default
 true
