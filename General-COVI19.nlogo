@@ -36,6 +36,7 @@ turtles-own[
 
   ;;; interventions
   isolated?  ;; agent in quarentine
+  id-number
 
   icu-private? ;; if the agent goes to the private ICU
 
@@ -67,15 +68,16 @@ end
 to setup-map
   resize-world -310 310 -280 280
   set-patch-size 1
-  ask patches with [pxcor < 0 ] [set pcolor white]
+  ask patches with [pxcor < 0 ] [set pcolor yellow]
+  ask patches with [pxcor >= 0 ] [set pcolor 88]
 end
 
 ;;;;
 to populate
   ; create turtles
   create-turtles num-population [
-    set shape "circle"
-    set size 6
+    set shape "person"
+    set size 9
     set infected? false
     set immune? false
     set hospitalized? false
@@ -84,6 +86,7 @@ to populate
     set never-infected? true
     set #-transmitted 0
     set isolated? false
+    set id-number random 10
 
     ifelse random-float 100 < perc-idosos [ ; if old or young
       ; create old
@@ -97,7 +100,8 @@ to populate
     ; if live in a favela
     ifelse random-float 100 < perc-favelas [
       set favela? true
-      set shape "lander"
+      set shape "person"
+      set size 9
       ;; which health system? favela-perc-private & non-perc-private
       ifelse favela-perc-private > random 100 [ set icu-private? true ] [ set icu-private? false ] ;;
     ] [
@@ -110,14 +114,14 @@ to populate
   ;layout-circle turtles with [ favela? ] 100
   ask turtles with [favela?] [
     ;let random-x random min-pxcor 0
-    move-to one-of patches with [pcolor = black and not any? turtles-here]
+    move-to one-of patches with [pcolor = 88 and not any? turtles-here]
     ;set heading 90
     ;fd 160
   ]
   ask turtles with [not favela?] [
     ;set heading 270
     ;fd 160
-    move-to one-of patches with [pcolor = white and not any? turtles-here]
+    move-to one-of patches with [pcolor = yellow and not any? turtles-here]
   ]
 end
 
@@ -191,7 +195,7 @@ to infect [ person ]
     set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
     set prob-spread item days-infected (item severity contagion-prob-daily)
     set shape "person doctor"
-    set size 18
+    set size 9
   ]
 end
 
@@ -301,6 +305,7 @@ to disease-development
         set infected? false
         set immune? true
         set shape "face happy"
+        set size 9
       ]
     ] ; end severity = 0 or 1
 
@@ -311,6 +316,7 @@ to disease-development
         set hospitalized? false
         set immune? true
         set shape "face happy"
+        set size 9
       ]
     ] ; end severity = 2
 
@@ -341,6 +347,7 @@ to disease-development
           set infected? false
 
           set shape "face happy"
+          set size 9
           set immune? true
         ]
 
@@ -417,18 +424,43 @@ end
 ;; ISOLATION
 
 to isolate-perc
-  let half-pop count turtles * perc-isolated / 100
-  ask n-of half-pop turtles with [ not hospitalized? and not icu? and not dead? ] [
+  let perc-pop count turtles * perc-isolated / 100
+  ask n-of perc-pop turtles with [ not hospitalized? and not icu? and not dead? ] [
     set isolated? true
+    set color black
   ]
 end
 
 to isolate-elderly
   ask turtles with [ old? ] [
     set isolated? true
+    set color black
   ]
 end
 
+to isolate-id
+  ask turtles with [not hospitalized? and not icu? and not dead?][
+    set isolated? true
+    set color black
+  ]
+
+  ask turtles with [ ticks mod 10 = id-number ] [
+    if not hospitalized? and not icu? and not dead? [
+      set isolated? false
+      ifelse old? [ set color orange ][ set color green ]
+    ]
+  ]
+end
+
+to free-people
+  ask turtles with [isolated?][
+    ifelse old? [
+      set color orange
+    ][
+      set color green
+    ]
+  ]
+end
 
 
 ;;;; SECONDARY PROCEDURES
@@ -446,9 +478,9 @@ to-report read-csv-to-list [ file ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-811
+772
 10
-1440
+1401
 580
 -1
 -1
@@ -473,15 +505,15 @@ ticks
 30.0
 
 SLIDER
-12
-56
-208
-89
+11
+57
+196
+90
 num-population
 num-population
 100
 10000
-5400.0
+1800.0
 100
 1
 people
@@ -499,10 +531,10 @@ debug?
 -1000
 
 SLIDER
-9
-145
-205
-178
+8
+142
+195
+175
 perc-idosos
 perc-idosos
 0
@@ -516,7 +548,7 @@ HORIZONTAL
 SLIDER
 8
 100
-205
+195
 133
 perc-favelas
 perc-favelas
@@ -546,10 +578,10 @@ NIL
 1
 
 MONITOR
-465
-418
-623
-463
+422
+437
+580
+482
 People from the Favelas
 count turtles with [favela? = true]
 17
@@ -557,10 +589,10 @@ count turtles with [favela? = true]
 11
 
 MONITOR
-455
-471
-617
-516
+419
+485
+581
+530
 People not from the Favelas
 count turtles with [favela? = false]
 17
@@ -568,10 +600,10 @@ count turtles with [favela? = false]
 11
 
 MONITOR
-455
-524
-616
-569
+420
+534
+581
+579
 Average Degree
 count links / count turtles
 2
@@ -579,10 +611,10 @@ count links / count turtles
 11
 
 MONITOR
-308
-476
-442
-521
+268
+477
+402
+522
 Infected (%)
 count turtles with [infected?] * 100 / count turtles
 2
@@ -607,10 +639,10 @@ NIL
 0
 
 SLIDER
-11
-187
-204
-220
+8
+183
+196
+216
 #-icus
 #-icus
 0
@@ -637,10 +669,10 @@ beds
 HORIZONTAL
 
 MONITOR
-647
-353
-778
-398
+595
+339
+726
+384
 Hospitalized
 count turtles with [hospitalized?]
 17
@@ -648,10 +680,10 @@ count turtles with [hospitalized?]
 11
 
 MONITOR
-648
-407
-779
-452
+594
+388
+725
+433
 People on ICUs
 count turtles with [icu?]
 17
@@ -696,10 +728,10 @@ PENS
 "Dead" 1.0 0 -2674135 true "" "plot count turtles with [dead?]"
 
 MONITOR
-649
-464
-793
-509
+602
+460
+746
+505
 ICUs Available (Total)
 #-icus-available
 17
@@ -727,10 +759,10 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-294
-169
-440
-214
+1030
+590
+1176
+635
 Total Deaths
 count turtles with [dead?]
 17
@@ -760,10 +792,10 @@ deaths-virus
 11
 
 MONITOR
-317
-217
-454
-262
+452
+338
+589
+383
 Healed (%)
 count turtles with [immune?] * 100 / count turtles
 2
@@ -786,10 +818,10 @@ person(s)
 HORIZONTAL
 
 MONITOR
-263
-94
-461
-139
+814
+591
+1012
+636
 Average transmission
 sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]
 2
@@ -797,10 +829,10 @@ sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [n
 11
 
 MONITOR
-317
-270
-452
-315
+453
+387
+588
+432
 Never infected (%)
 count turtles with [never-infected?] * 100 / count turtles
 2
@@ -808,10 +840,10 @@ count turtles with [never-infected?] * 100 / count turtles
 11
 
 MONITOR
-318
-324
-451
-369
+1187
+589
+1320
+634
 Deaths (%)
 count turtles with [dead?] * 100 / count turtles
 2
@@ -819,10 +851,10 @@ count turtles with [dead?] * 100 / count turtles
 11
 
 TEXTBOX
-1295
-30
-1335
-48
+1207
+551
+1247
+569
 Favela
 11
 0.0
@@ -844,10 +876,10 @@ person(s)
 HORIZONTAL
 
 SLIDER
-21
-464
-256
-497
+10
+463
+216
+496
 #-intra-connections
 #-intra-connections
 1
@@ -859,31 +891,21 @@ person(s)
 HORIZONTAL
 
 MONITOR
-307
-527
-434
-572
+267
+528
+394
+573
 # of people infected
 count turtles with [infected?]
 17
 1
 11
 
-CHOOSER
-1220
-587
-1413
-632
-interventions
-interventions
-"No interventions" "Quarentine 100%" "Quarentine 50%" "Quarentine elderly only"
-0
-
 SLIDER
-12
-228
-202
-261
+7
+222
+197
+255
 perc-icus-public
 perc-icus-public
 0
@@ -895,10 +917,10 @@ perc-icus-public
 HORIZONTAL
 
 MONITOR
-648
-516
-791
-561
+601
+512
+744
+557
 ICUs Available (Public)
 #-icus-public
 17
@@ -906,10 +928,10 @@ ICUs Available (Public)
 11
 
 MONITOR
-646
-571
-792
-616
+635
+573
+781
+618
 ICUs Available (Private)
 #-icus-private
 17
@@ -917,10 +939,10 @@ ICUs Available (Private)
 11
 
 SLIDER
-29
-539
-237
-572
+11
+505
+193
+538
 favela-perc-private
 favela-perc-private
 0
@@ -932,10 +954,10 @@ favela-perc-private
 HORIZONTAL
 
 SLIDER
-28
-582
-237
-615
+10
+548
+195
+581
 nonfavela-perc-private
 nonfavela-perc-private
 0
@@ -947,20 +969,20 @@ nonfavela-perc-private
 HORIZONTAL
 
 TEXTBOX
-297
-17
-447
-35
+288
+11
+438
+207
 Isolations scenarios\n
 14
 13.0
-1
+0
 
 SLIDER
-19
-283
-191
-316
+7
+259
+194
+292
 risk-rate-favela
 risk-rate-favela
 100
@@ -972,10 +994,10 @@ risk-rate-favela
 HORIZONTAL
 
 SLIDER
-144
-336
-316
-369
+251
+162
+423
+195
 perc-isolated
 perc-isolated
 0
@@ -985,6 +1007,74 @@ perc-isolated
 1
 %
 HORIZONTAL
+
+BUTTON
+250
+40
+348
+73
+Isolate %
+isolate-perc
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+251
+121
+349
+154
+Quit quarentine
+free-people
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+359
+40
+457
+73
+Isolate Elderly
+isolate-elderly
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+251
+80
+348
+113
+Isolate by ID
+isolate-id
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
