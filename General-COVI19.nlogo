@@ -12,6 +12,8 @@ globals [
 
   deaths-virus
   deaths-infra
+
+  intervention?
 ]
 
 patches-own [
@@ -63,6 +65,8 @@ to setup-globals
 
   set deaths-virus 0
   set deaths-infra 0
+
+  set intervention? false
 end
 
 ;;;;
@@ -208,6 +212,7 @@ to go
   if debug? [type count turtles with [infected?] type " " type count turtles with [hospitalized?] type " " type count turtles with [icu?] type "\n"]
   disease-development
   interact-with-others
+  set-quarentine ; define if it is quarentine time or not
 
   tick
 end
@@ -426,7 +431,18 @@ end
 
 
 ;;;;;;;;
-;; ISOLATION
+
+;; ISOLATION "perc" "id" "old"
+to apply-intervention
+  ifelse isolation-mode = "perc" [ isolate-perc ][
+    ifelse isolation-mode = "id" [ isolate-id ][
+      ifelse isolation-mode = "old" [][]
+    ]
+  ]
+
+
+
+end
 
 to isolate-perc
   let perc-pop count turtles * perc-isolated / 100
@@ -457,37 +473,71 @@ to isolate-id
   ]
 end
 
-to free-people
+to end-quarentine
   ask turtles with [isolated?][
     ifelse old? [
+      set isolated? false
       set color orange
     ][
+      set isolated? false
       set color green
     ]
   ]
 end
 
-to apply-intervention
-  ; the intervention starts whenever the % of the population with the characteristics is reached
-  ; it also ends when this percentage is reached again
-  ;type scenario type "\n"
-  ; intervention-threshold
-  ifelse scenario = "symptomatic" [
-    ; symptomatic
-    if (count turtles with [symptoms?]) > count turtles * intervention-threshold / 100 [
-      type count turtles with [symptoms?]
+to set-quarentine
+  ;
+  ;set intervention? false
+  if quarentine-mode? [
+    ifelse intervention? [ ; if intervention has started already
+      ifelse scenario = "symptomatic" and (count turtles with [symptoms?]) > intervention-threshold [
+        set intervention? true
+      ][
+        set intervention? false
+        end-quarentine
+      ]
+      ifelse scenario = "hospitalized" and (count turtles with [hospitalized?]) > intervention-threshold [
+        set intervention? true
+      ][
+        set intervention? false
+        end-quarentine
+      ]
+      ifelse scenario = "dead" and (count turtles with [dead?]) > intervention-threshold [
+        set intervention? true
+      ][
+        set intervention? false
+        end-quarentine
+      ]
+    ][
+      ; intervention has not started. Initiate it!
+      ifelse scenario = "symptomatic" and (count turtles with [symptoms?]) > intervention-threshold [
+        set intervention? true
+        apply-intervention
+      ][
+        set intervention? false
+      ]
+      ifelse scenario = "hospitalized" and (count turtles with [hospitalized?]) > intervention-threshold [
+        set intervention? true
+        apply-intervention
+      ][
+        set intervention? false
+      ]
+      ifelse scenario = "dead" and (count turtles with [dead?]) > intervention-threshold [
+        set intervention? true
+        apply-intervention
+      ][
+        set intervention? false
+      ]
     ]
+  ] ; end if quarentine-mode
 
+  ifelse intervention? [
   ][
-    ifelse scenario = "hospitalized" [
-      ; hospitalized
-
-    ][ ; "dead"
-    ]
+    ; no intervention
   ]
-
-
 end
+
+
 
 
 ;;;; SECONDARY PROCEDURES
@@ -532,9 +582,9 @@ ticks
 30.0
 
 SLIDER
-11
+10
 57
-196
+190
 90
 num-population
 num-population
@@ -558,24 +608,24 @@ debug?
 -1000
 
 SLIDER
-8
+7
 142
-195
+187
 175
 perc-idosos
 perc-idosos
 0
 100
-30.0
+20.0
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-8
+7
 100
-195
+186
 133
 perc-favelas
 perc-favelas
@@ -605,32 +655,32 @@ NIL
 1
 
 MONITOR
-422
-437
-580
-482
-People from the Favelas
+438
+548
+539
+593
+Pop (Favelas)
 count turtles with [favela? = true]
 17
 1
 11
 
 MONITOR
-419
-485
-581
-530
-People not from the Favelas
+438
+596
+540
+641
+Pop (not Favelas)
 count turtles with [favela? = false]
 17
 1
 11
 
 MONITOR
-420
-534
-581
-579
+656
+337
+760
+382
 Average Degree
 count links / count turtles
 2
@@ -638,10 +688,10 @@ count links / count turtles
 11
 
 MONITOR
-268
-477
-402
-522
+666
+595
+742
+640
 Infected (%)
 count turtles with [infected?] * 100 / count turtles
 2
@@ -649,10 +699,10 @@ count turtles with [infected?] * 100 / count turtles
 11
 
 BUTTON
-88
-13
-160
-46
+79
+12
+151
+45
 NIL
 go
 NIL
@@ -666,9 +716,9 @@ NIL
 0
 
 SLIDER
-8
+7
 183
-196
+187
 216
 #-icus
 #-icus
@@ -680,26 +730,11 @@ SLIDER
 ICUs
 HORIZONTAL
 
-SLIDER
-431
-588
-623
-621
-#-beds
-#-beds
-0
-100
-100.0
-1
-1
-beds
-HORIZONTAL
-
 MONITOR
-595
-339
-726
-384
+836
+592
+921
+637
 Hospitalized
 count turtles with [hospitalized?]
 17
@@ -707,21 +742,21 @@ count turtles with [hospitalized?]
 11
 
 MONITOR
-594
-388
-725
-433
-People on ICUs
+930
+591
+1003
+636
+On ICUs
 count turtles with [icu?]
 17
 1
 11
 
 BUTTON
-170
-14
-233
-47
+157
+12
+220
+45
 NIL
 go
 T
@@ -756,10 +791,10 @@ PENS
 "Never Infected" 1.0 0 -7500403 true "" "plot count turtles with [never-infected?] * 100 / count turtles"
 
 MONITOR
-602
-460
-746
-505
+621
+433
+765
+478
 ICUs Available (Total)
 #-icus-available
 17
@@ -787,9 +822,9 @@ PENS
 "ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
 
 MONITOR
-1030
+1094
 590
-1176
+1178
 635
 Total Deaths
 count turtles with [dead?]
@@ -798,21 +833,21 @@ count turtles with [dead?]
 11
 
 MONITOR
-270
-372
-414
-417
-Deaths (Lack of ICUs)
+1294
+589
+1399
+634
+Deaths (No ICUs)
 deaths-infra
 17
 1
 11
 
 MONITOR
-270
-425
-415
-470
+1196
+589
+1285
+634
 Deaths (Virus)
 deaths-virus
 17
@@ -820,10 +855,10 @@ deaths-virus
 11
 
 MONITOR
-452
-338
-589
-383
+750
+594
+827
+639
 Healed (%)
 count turtles with [immune?] * 100 / count turtles
 2
@@ -846,10 +881,10 @@ person(s)
 HORIZONTAL
 
 MONITOR
-814
-591
-1012
-636
+473
+454
+611
+499
 Average transmission
 sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]
 2
@@ -857,10 +892,10 @@ sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [n
 11
 
 MONITOR
-453
-387
-588
-432
+548
+595
+657
+640
 Never infected (%)
 count turtles with [never-infected?] * 100 / count turtles
 2
@@ -868,10 +903,10 @@ count turtles with [never-infected?] * 100 / count turtles
 11
 
 MONITOR
-1187
-589
-1320
-634
+1010
+591
+1089
+636
 Deaths (%)
 count turtles with [dead?] * 100 / count turtles
 2
@@ -919,10 +954,10 @@ person(s)
 HORIZONTAL
 
 MONITOR
-267
-528
-394
-573
+476
+404
+603
+449
 # of people infected
 count turtles with [infected?]
 17
@@ -930,9 +965,9 @@ count turtles with [infected?]
 11
 
 SLIDER
-7
+6
 222
-197
+188
 255
 perc-icus-public
 perc-icus-public
@@ -945,10 +980,10 @@ perc-icus-public
 HORIZONTAL
 
 MONITOR
-601
-512
-744
-557
+620
+485
+763
+530
 ICUs Available (Public)
 #-icus-public
 17
@@ -956,10 +991,10 @@ ICUs Available (Public)
 11
 
 MONITOR
-635
-573
-781
-618
+621
+536
+767
+581
 ICUs Available (Private)
 #-icus-private
 17
@@ -1007,9 +1042,9 @@ Isolations scenarios\n
 0
 
 SLIDER
-7
+6
 259
-194
+187
 292
 risk-rate-favela
 risk-rate-favela
@@ -1056,10 +1091,10 @@ NIL
 BUTTON
 251
 121
-349
+376
 154
-Quit quarentine
-free-people
+End quarentine
+end-quarentine
 NIL
 1
 T
@@ -1115,10 +1150,10 @@ scenario
 0
 
 SLIDER
-250
-256
-425
-289
+248
+255
+457
+288
 intervention-threshold
 intervention-threshold
 0
@@ -1126,7 +1161,7 @@ intervention-threshold
 5.0
 1
 1
-%
+person(s)
 HORIZONTAL
 
 BUTTON
@@ -1145,6 +1180,27 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+41
+615
+212
+648
+quarentine-mode?
+quarentine-mode?
+1
+1
+-1000
+
+CHOOSER
+271
+355
+409
+400
+isolation-mode
+isolation-mode
+"perc" "id" "old"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
