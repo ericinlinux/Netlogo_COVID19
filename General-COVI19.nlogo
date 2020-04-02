@@ -21,6 +21,7 @@ turtles-own[
   old?        ;; elder?
   favela?     ;; live in a favela?
   infected?   ;; not infected or infected?
+  symptoms?
   immune?
   hospitalized?
   never-infected?
@@ -79,6 +80,7 @@ to populate
     set shape "person"
     set size 9
     set infected? false
+    set symptoms? false
     set immune? false
     set hospitalized? false
     set icu? false
@@ -300,7 +302,18 @@ to disease-development
     set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
     set prob-spread item days-infected (item severity contagion-prob-daily)
 
-    if severity = 0 or severity = 1[
+    if severity = 0 [
+      if days-infected = 27 [
+        set infected? false
+        set immune? true
+        set shape "face happy"
+        set size 9
+      ]
+    ] ; end severity = 0 or 1
+
+    if severity = 1[
+      if days-infected = 6 [ set symptoms? true ]
+      if days-infected = 11 [ set symptoms? false ]
       if days-infected = 27 [
         set infected? false
         set immune? true
@@ -310,9 +323,11 @@ to disease-development
     ] ; end severity = 0 or 1
 
     if severity = 2 [
+      if days-infected = 6 [ set symptoms? true ]
       if days-infected = 11 [ hospitilize self]
       if days-infected = 27 [
         set infected? false
+        set symptoms? false
         set hospitalized? false
         set immune? true
         set shape "face happy"
@@ -321,34 +336,27 @@ to disease-development
     ] ; end severity = 2
 
     if severity = 3 [
+      if days-infected = 6 [ set symptoms? true ]
       if days-infected = 11 [ hospitilize self]
       if days-infected = 17 [ icu self]
       if days-infected = 27 [
+        set symptoms? false
+        set icu? false
+        set infected? false
         ; free icus
         set #-icus-available #-icus-available + 1
         ifelse icu-private? [ set #-icus-private #-icus-private + 1 ] [set #-icus-public #-icus-public + 1 ]
         ; chance of death
         ifelse random-float 100 < 80 [ ; 80% of chance to die
           ; die
-          if debug? [type self type "DIED in the ICU!!!\n"]
-
-          set hospitalized? false
-          set icu? false
-          set infected? false
-
           set dead? true
-          ;set hidden? true
           set shape "x"
           ask my-links [die]
           set deaths-virus deaths-virus + 1 ; deaths because of the virus
         ][
-          set hospitalized? false
-          set icu? false
-          set infected? false
-
+          set immune? true
           set shape "face happy"
           set size 9
-          set immune? true
         ]
 
       ]
@@ -366,20 +374,19 @@ end
 
 to icu [ person ]
   ask person [
+    set hospitalized? false
+
     ; if icu is private
     ifelse icu-private? [   ;;; private
       ifelse #-icus-private > 0 [
         set icu? true
-        set hospitalized? false
         set #-icus-available #-icus-available - 1
         set #-icus-private #-icus-private - 1
       ][
         ; die
-        if debug? [type self type "DIED for the lack of ICUs!!!\n"]
-        set hospitalized? false
         set icu? false
         set infected? false
-
+        set symptoms? false
         set dead? true
         ;set hidden? true
         set shape "x"
@@ -390,16 +397,14 @@ to icu [ person ]
       ; if icu is public
       ifelse #-icus-public > 0 [
         set icu? true
-        set hospitalized? false
         set #-icus-available #-icus-available - 1
         set #-icus-public #-icus-public - 1
       ][
         ; die
         if debug? [type self type "DIED for the lack of ICUs!!!\n"]
-        set hospitalized? false
         set icu? false
         set infected? false
-
+        set symptoms? false
         set dead? true
         ;set hidden? true
         set shape "x"
@@ -460,6 +465,28 @@ to free-people
       set color green
     ]
   ]
+end
+
+to apply-intervention
+  ; the intervention starts whenever the % of the population with the characteristics is reached
+  ; it also ends when this percentage is reached again
+  ;type scenario type "\n"
+  ; intervention-threshold
+  ifelse scenario = "symptomatic" [
+    ; symptomatic
+    if (count turtles with [symptoms?]) > count turtles * intervention-threshold / 100 [
+      type count turtles with [symptoms?]
+    ]
+
+  ][
+    ifelse scenario = "hospitalized" [
+      ; hospitalized
+
+    ][ ; "dead"
+    ]
+  ]
+
+
 end
 
 
@@ -712,7 +739,7 @@ PLOT
 171
 761
 332
-Infected people
+Infected people (%)
 Days
 # of people
 0.0
@@ -723,9 +750,10 @@ true
 true
 "" ""
 PENS
-"Infected" 1.0 0 -13345367 true "" "plot count turtles with [infected?]"
-"Hospitalized + ICUs" 1.0 0 -14439633 true "" "plot count turtles with [hospitalized? or icu?]"
-"Dead" 1.0 0 -2674135 true "" "plot count turtles with [dead?]"
+"Infected" 1.0 0 -13345367 true "" "plot count turtles with [infected?] * 100 / count turtles"
+"Hospitalized + ICUs" 1.0 0 -14439633 true "" "plot count turtles with [hospitalized? or icu?] * 100 / count turtles"
+"Dead" 1.0 0 -2674135 true "" "plot count turtles with [dead?] * 100 / count turtles"
+"Never Infected" 1.0 0 -7500403 true "" "plot count turtles with [never-infected?] * 100 / count turtles"
 
 MONITOR
 602
@@ -971,8 +999,8 @@ HORIZONTAL
 TEXTBOX
 288
 11
-438
-207
+432
+41
 Isolations scenarios\n
 14
 13.0
@@ -1066,6 +1094,48 @@ BUTTON
 113
 Isolate by ID
 isolate-id
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+CHOOSER
+250
+202
+423
+247
+scenario
+scenario
+"symptomatic" "hospitalized" "dead"
+0
+
+SLIDER
+250
+256
+425
+289
+intervention-threshold
+intervention-threshold
+0
+100
+5.0
+1
+1
+%
+HORIZONTAL
+
+BUTTON
+263
+300
+375
+333
+NIL
+apply-intervention
 NIL
 1
 T
