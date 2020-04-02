@@ -66,7 +66,7 @@ to setup-globals
   set deaths-virus 0
   set deaths-infra 0
 
-  set intervention? false
+  set intervention? false ; start with no intervention
 end
 
 ;;;;
@@ -212,7 +212,7 @@ to go
   if debug? [type count turtles with [infected?] type " " type count turtles with [hospitalized?] type " " type count turtles with [icu?] type "\n"]
   disease-development
   interact-with-others
-  set-quarentine ; define if it is quarentine time or not
+  if quarentine-mode?[set-quarentine] ; define if it is quarentine time or not
 
   tick
 end
@@ -220,23 +220,23 @@ end
 ; interactions between infected people
 to interact-with-others
   ; only infected turtles matter for the spread of the virus
-  ask turtles with [infected? and not dead?] [
+  ask turtles with [infected? and not dead? and not isolated?] [
     let numlinks count my-links
     let contagion-probability prob-spread
 
     let intra 2 * num-contacts / 3 ;; contacts with people from the same group
     let inter num-contacts / 3;; contacts with people from the other group
 
-    if debug? [type self type " has " type numlinks type " links and " type num-contacts type " contacts\n"]
+    ;if debug? [type self type " has " type numlinks type " links and " type num-contacts type " contacts\n"]
 
     let sTurtle self
 
     ifelse numlinks >= intra [  ; if the number of contacts is bigger than the number of friends/family
       ask n-of numlinks link-neighbors [
         ;
-        if not infected? and not immune? and not dead? [
+        if not infected? and not immune? and not dead? and not isolated? [
           if random-float 100 <= contagion-probability [
-            if debug? [type sTurtle type " infected " type self type "\n"]
+            ;if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
             ask sTurtle [set #-transmitted #-transmitted + 1]  ; increment the number of transmitted
           ]
@@ -244,10 +244,10 @@ to interact-with-others
       ]
     ][ ; less close contacts than daily contacts
       ask link-neighbors [
-        if not infected? and not immune? and not dead? [
-          if debug? [type "Neighbor not infected: " type self type "\n"]
+        if not infected? and not immune? and not dead? and not isolated? [
+          ;if debug? [type "Neighbor not infected: " type self type "\n"]
           if random-float 100 <= contagion-probability [
-            if debug? [type sTurtle type " infected " type self type "\n"]
+            ;if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
             ask sTurtle [set #-transmitted #-transmitted + 1]
           ]
@@ -264,13 +264,13 @@ to interact-with-others
         ]
 
         ask n-of n-iterations link-neighbors [
-          if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
-          if debug? [type "Contagion probability: " type contagion-probability type "\n"]
+          ;if debug? [type "Turtle " type sTurtle type " -> Neighbors: " type self type "\n"]
+          ;if debug? [type "Contagion probability: " type contagion-probability type "\n"]
           ;
-          if not infected? and not immune? and not dead? [
-            if debug? [type "Neighbor not infected: " type self type "\n"]
+          if not infected? and not immune? and not dead? and not isolated? [
+            ;if debug? [type "Neighbor not infected: " type self type "\n"]
             if random-float 100 <= contagion-probability [
-              if debug? [type sTurtle type " infected " type self type "\n"]
+              ;if debug? [type sTurtle type " infected " type self type "\n"]
               infect self
               ask sTurtle [set #-transmitted #-transmitted + 1]
             ]
@@ -284,7 +284,7 @@ to interact-with-others
 
         if debug? [type self type "\n"]
 
-        if not infected? and not immune? and not dead? [
+        if not infected? and not immune? and not dead? and not isolated? [
           if random-float 100 <= contagion-probability [
             if debug? [type sTurtle type " infected " type self type "\n"]
             infect self
@@ -436,19 +436,21 @@ end
 to apply-intervention
   ifelse isolation-mode = "perc" [ isolate-perc ][
     ifelse isolation-mode = "id" [ isolate-id ][
-      ifelse isolation-mode = "old" [][]
+      ifelse isolation-mode = "old" [isolate-elderly][]
     ]
   ]
-
-
-
 end
 
 to isolate-perc
-  let perc-pop count turtles * perc-isolated / 100
-  ask n-of perc-pop turtles with [ not hospitalized? and not icu? and not dead? ] [
-    set isolated? true
-    set color black
+  ifelse count turtles with [color = black] > 0 [
+    type "ERROR! Isolate by percentage was called before!\n"
+    stop
+  ][
+    let perc-pop count turtles * perc-isolated / 100
+    ask n-of perc-pop turtles with [ not hospitalized? and not icu? and not dead? ] [
+      set isolated? true
+      set color black
+    ]
   ]
 end
 
@@ -486,55 +488,96 @@ to end-quarentine
 end
 
 to set-quarentine
-  ;
-  ;set intervention? false
-  if quarentine-mode? [
-    ifelse intervention? [ ; if intervention has started already
-      ifelse scenario = "symptomatic" and (count turtles with [symptoms?]) > intervention-threshold [
-        set intervention? true
-      ][
-        set intervention? false
-        end-quarentine
-      ]
-      ifelse scenario = "hospitalized" and (count turtles with [hospitalized?]) > intervention-threshold [
-        set intervention? true
-      ][
-        set intervention? false
-        end-quarentine
-      ]
-      ifelse scenario = "dead" and (count turtles with [dead?]) > intervention-threshold [
-        set intervention? true
-      ][
-        set intervention? false
-        end-quarentine
-      ]
-    ][
-      ; intervention has not started. Initiate it!
-      ifelse scenario = "symptomatic" and (count turtles with [symptoms?]) > intervention-threshold [
-        set intervention? true
-        apply-intervention
-      ][
-        set intervention? false
-      ]
-      ifelse scenario = "hospitalized" and (count turtles with [hospitalized?]) > intervention-threshold [
-        set intervention? true
-        apply-intervention
-      ][
-        set intervention? false
-      ]
-      ifelse scenario = "dead" and (count turtles with [dead?]) > intervention-threshold [
-        set intervention? true
-        apply-intervention
-      ][
-        set intervention? false
-      ]
-    ]
-  ] ; end if quarentine-mode
+  type scenario type " " type isolation-mode type " # symptomatic " type (count turtles with [symptoms?]) type "\n"
 
-  ifelse intervention? [
+  ifelse intervention? [ ; if intervention has started already
+    if scenario = "symptomatic" [
+      ifelse (count turtles with [symptoms?]) > intervention-threshold [
+        type "Inside and can repeat\n"
+        ;set intervention? true
+        if isolation-mode = "id" [ isolate-id ]
+      ][
+        type "end of quarentine\n"
+        set intervention? false
+        end-quarentine
+      ]
+    ] ; end scenario symptomatic
+
+    if scenario = "hospitalized" [
+      ifelse (count turtles with [hospitalized?]) > intervention-threshold [
+        ;set intervention? true
+        if isolation-mode = "id" [ isolate-id ]
+      ][
+        set intervention? false
+        end-quarentine
+      ]
+    ] ; end scenario hospitalized
+
+    if scenario = "dead" [
+      ifelse (count turtles with [dead?]) > intervention-threshold [
+        ;set intervention? true
+        if isolation-mode = "id" [ isolate-id ]
+      ][
+        set intervention? false
+        end-quarentine
+      ]
+    ]; end sceanrio dead
+
   ][
-    ; no intervention
-  ]
+    ; intervention has not started. Initiate it!
+    if scenario = "symptomatic" [
+      ifelse (count turtles with [symptoms?]) > intervention-threshold [
+        type "Started intervention\n"
+        set intervention? true
+
+        ifelse isolation-mode = "perc" [ isolate-perc ][
+          ifelse isolation-mode = "id" [ isolate-id ][
+            ifelse isolation-mode = "old" [isolate-elderly][
+              type "ERROR ON INTERVENTION\n"
+              stop
+            ]
+          ]
+        ]
+      ][
+        set intervention? false
+      ]
+    ] ; end scenario = symptomatic
+
+    if scenario = "hospitalized" [
+      ifelse (count turtles with [hospitalized?]) > intervention-threshold [
+        set intervention? true
+        ifelse isolation-mode = "perc" [ isolate-perc ][
+          ifelse isolation-mode = "id" [ isolate-id ][
+            ifelse isolation-mode = "old" [isolate-elderly][
+              type "ERROR ON INTERVENTION"
+              stop
+            ]
+          ]
+        ]
+      ][
+        set intervention? false
+      ]
+    ] ; end scenario = hospitalized
+
+    if scenario = "dead" [
+      ifelse (count turtles with [dead?]) > intervention-threshold [
+        set intervention? true
+        ifelse isolation-mode = "perc" [ isolate-perc ][
+          ifelse isolation-mode = "id" [ isolate-id ][
+            ifelse isolation-mode = "old" [isolate-elderly][
+              type "ERROR ON INTERVENTION"
+              stop
+            ]
+          ]
+        ]
+      ][
+        set intervention? false
+      ]
+    ] ; end scenario = dead
+  ] ; else intervention?
+
+
+
 end
 
 
@@ -616,7 +659,7 @@ perc-idosos
 perc-idosos
 0
 100
-20.0
+21.0
 1
 1
 %
@@ -778,7 +821,7 @@ Infected people (%)
 Days
 # of people
 0.0
-90.0
+10.0
 0.0
 100.0
 true
@@ -1072,63 +1115,12 @@ perc-isolated
 HORIZONTAL
 
 BUTTON
-250
-40
-348
-73
-Isolate %
-isolate-perc
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-251
+249
+88
+363
 121
-376
-154
 End quarentine
 end-quarentine
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-359
-40
-457
-73
-Isolate Elderly
-isolate-elderly
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-251
-80
-348
-113
-Isolate by ID
-isolate-id
 NIL
 1
 T
@@ -1158,17 +1150,17 @@ intervention-threshold
 intervention-threshold
 0
 100
-5.0
+40.0
 1
 1
 person(s)
 HORIZONTAL
 
 BUTTON
-263
-300
-375
-333
+249
+43
+361
+76
 NIL
 apply-intervention
 NIL
@@ -1188,7 +1180,7 @@ SWITCH
 648
 quarentine-mode?
 quarentine-mode?
-1
+0
 1
 -1000
 
@@ -1201,6 +1193,25 @@ isolation-mode
 isolation-mode
 "perc" "id" "old"
 0
+
+PLOT
+234
+430
+434
+580
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles with [symptoms?]"
+"pen-1" 1.0 0 -5298144 true "" "plot intervention-threshold"
 
 @#$#@#$#@
 ## WHAT IS IT?
