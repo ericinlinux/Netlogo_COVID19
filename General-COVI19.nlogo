@@ -307,6 +307,9 @@ to disease-development
     set num-contacts item days-infected (item severity contact-daily) ; get the number of contacts based on the severity of the person and the days of infection
     set prob-spread item days-infected (item severity contagion-prob-daily)
 
+    ; adjust the risk of contagion
+    if favela? [ set prob-spread prob-spread * risk-rate-favela / 100 ]
+
     if severity = 0 [
       if days-infected = 27 [
         set infected? false
@@ -466,13 +469,55 @@ to isolate-id
     set isolated? true
     set color black
   ]
+  let day-of-week ticks mod 7
 
-  ask turtles with [ ticks mod 10 = id-number ] [
-    if not hospitalized? and not icu? and not dead? [
-      set isolated? false
-      ifelse old? [ set color orange ][ set color green ]
-    ]
-  ]
+  if not (day-of-week = 5) and not (day-of-week = 6) [ ; weekends everyone at home
+
+    if day-of-week = 0 [
+      ask turtles with [ id-number = 0 or id-number = 1] [
+        if not hospitalized? and not icu? and not dead? [
+          set isolated? false
+          ifelse old? [ set color orange ][ set color green ]
+        ]
+      ]
+    ] ; end of day 0
+
+    if day-of-week = 1 [
+      ask turtles with [ id-number = 2 or id-number = 3] [
+        if not hospitalized? and not icu? and not dead? [
+          set isolated? false
+          ifelse old? [ set color orange ][ set color green ]
+        ]
+      ]
+    ] ; end of day 1
+
+    if day-of-week = 2 [
+      ask turtles with [ id-number = 4 or id-number = 5] [
+        if not hospitalized? and not icu? and not dead? [
+          set isolated? false
+          ifelse old? [ set color orange ][ set color green ]
+        ]
+      ]
+    ] ; end of day 2
+
+    if day-of-week = 3 [
+      ask turtles with [ id-number = 6 or id-number = 7] [
+        if not hospitalized? and not icu? and not dead? [
+          set isolated? false
+          ifelse old? [ set color orange ][ set color green ]
+        ]
+      ]
+    ] ; end of day 3
+
+    if day-of-week = 4 [
+      ask turtles with [ id-number = 8 or id-number = 9] [
+        if not hospitalized? and not icu? and not dead? [
+          set isolated? false
+          ifelse old? [ set color orange ][ set color green ]
+        ]
+      ]
+    ] ; end of day 4
+  ] ; if not weekends
 end
 
 to end-quarentine
@@ -488,12 +533,12 @@ to end-quarentine
 end
 
 to set-quarentine
-  type scenario type " " type isolation-mode type " # symptomatic " type (count turtles with [symptoms?]) type "\n"
+  if debug? [type scenario type " " type isolation-mode type " # symptomatic " type (count turtles with [symptoms?]) type "\n"]
 
   ifelse intervention? [ ; if intervention has started already
     if scenario = "symptomatic" [
       ifelse (count turtles with [symptoms?]) > intervention-threshold [
-        type "Inside and can repeat\n"
+        if debug? [type "Inside and can repeat\n"]
         ;set intervention? true
         if isolation-mode = "id" [ isolate-id ]
       ][
@@ -527,7 +572,7 @@ to set-quarentine
     ; intervention has not started. Initiate it!
     if scenario = "symptomatic" [
       ifelse (count turtles with [symptoms?]) > intervention-threshold [
-        type "Started intervention\n"
+        if debug? [type "Started intervention\n"]
         set intervention? true
 
         ifelse isolation-mode = "perc" [ isolate-perc ][
@@ -1100,10 +1145,10 @@ risk-rate-favela
 HORIZONTAL
 
 SLIDER
-251
-162
-423
-195
+241
+34
+457
+67
 perc-isolated
 perc-isolated
 0
@@ -1114,38 +1159,21 @@ perc-isolated
 %
 HORIZONTAL
 
-BUTTON
-249
-88
-363
-121
-End quarentine
-end-quarentine
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 CHOOSER
-250
-202
-423
-247
+352
+112
+460
+157
 scenario
 scenario
 "symptomatic" "hospitalized" "dead"
 0
 
 SLIDER
-248
-255
-457
-288
+241
+74
+458
+107
 intervention-threshold
 intervention-threshold
 0
@@ -1155,23 +1183,6 @@ intervention-threshold
 1
 person(s)
 HORIZONTAL
-
-BUTTON
-249
-43
-361
-76
-NIL
-apply-intervention
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
 
 SWITCH
 41
@@ -1185,21 +1196,21 @@ quarentine-mode?
 -1000
 
 CHOOSER
-271
-355
-409
-400
+242
+112
+351
+157
 isolation-mode
 isolation-mode
 "perc" "id" "old"
-0
+1
 
 PLOT
 234
 430
 434
 580
-plot 1
+Check threshold
 NIL
 NIL
 0.0
@@ -1210,8 +1221,8 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles with [symptoms?]"
-"pen-1" 1.0 0 -5298144 true "" "plot intervention-threshold"
+"People with symptoms" 1.0 0 -16777216 true "" "plot count turtles with [symptoms?]"
+"Intervention Threshold" 1.0 0 -5298144 true "" "plot intervention-threshold"
 
 @#$#@#$#@
 ## WHAT IS IT?
