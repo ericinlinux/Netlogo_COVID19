@@ -426,8 +426,8 @@ end
 
 ;;;; STATISTICS OF NUMBER OF CONTACTS AND CONTAGION PROBABILITY
 to load-statistics
-  let file1 "./data/contacts_daily.csv"
-  let file2 "./data/contagion_chance.csv"
+  let file1 "../data/contacts_daily.csv"
+  let file2 "../data/contagion_chance.csv"
   set contact-daily read-csv-to-list file1
   set contagion-prob-daily read-csv-to-list file2
 end
