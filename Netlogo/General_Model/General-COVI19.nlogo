@@ -5,13 +5,15 @@ extensions [ csv ]
 globals [
   contact-daily
   contagion-prob-daily
-  #-icus-available
 
-  #-icus-public
-  #-icus-private
+  #-icus-available
+  #-icus-total
+  #-icus-public-available
+  #-icus-private-available
 
   deaths-virus
-  deaths-infra
+  deaths-infra-private
+  deaths-infra-public
 
   intervention?
 ]
@@ -59,12 +61,17 @@ end
 to setup-globals
   load-statistics
   ; distribution of the ICUs
-  set #-icus-available #-icus
-  set #-icus-public #-icus * perc-icus-public / 100
-  set #-icus-private #-icus * (100 - perc-icus-public) / 100
+  ; considering 80% of occupancy for private icus and 95% for public icus
+  set #-icus-total #-icus-public + #-icus-private
+
+  set #-icus-public-available round (#-icus-public * 0.05)
+  set #-icus-private-available round (#-icus-private * 0.2)
+
+  set #-icus-available #-icus-public-available + #-icus-private-available
 
   set deaths-virus 0
-  set deaths-infra 0
+  set deaths-infra-private 0
+  set deaths-infra-public 0
 
   set intervention? false ; start with no intervention
 end
@@ -73,8 +80,8 @@ end
 to setup-map
   resize-world -310 310 -280 280
   set-patch-size 1
-  ask patches with [pxcor < 0 ] [set pcolor yellow]
-  ask patches with [pxcor >= 0 ] [set pcolor 88]
+  ask patches with [pxcor < (max-pxcor / 2) or pycor < (max-pycor / 2) ] [set pcolor yellow]
+  ask patches with [pxcor >= (max-pxcor / 2) and pycor >= (max-pycor / 2) ] [set pcolor 88]
 end
 
 ;;;;
@@ -94,15 +101,7 @@ to populate
     set isolated? false
     set id-number random 10
 
-    ifelse random-float 100 < perc-idosos [ ; if old or young
-      ; create old
-      set old? true
-      set color orange
-    ] [
-      ; create young
-      set old? false
-      set color green
-    ]
+
     ; if live in a favela
     ifelse random-float 100 < perc-favelas [
       set favela? true
@@ -110,9 +109,29 @@ to populate
       set size 9
       ;; which health system? favela-perc-private & non-perc-private
       ifelse favela-perc-private > random 100 [ set icu-private? true ] [ set icu-private? false ] ;;
-    ] [
+
+      ifelse random-float 100 < perc-idosos-favela [ ; if old or young
+        set old? true
+        set color orange
+      ] [
+        ; create young
+        set old? false
+        set color green
+      ]
+
+    ][
+      ; Copanema
       set favela? false
       ifelse nonfavela-perc-private > random 100 [ set icu-private? true ] [ set icu-private? false ]
+
+      ifelse random-float 100 < perc-idosos [ ; if old or young
+        set old? true
+        set color orange
+      ] [
+        ; create young
+        set old? false
+        set color green
+      ]
     ]
   ]
 
@@ -134,20 +153,20 @@ end
 ;;;;
 to setup-ties
   ask turtles with [favela?] [
-    create-links-to n-of #-intra-connections other turtles with [favela?] [
+    create-links-to n-of #-intra-favela other turtles with [favela?] [
       hide-link
     ]
-    create-links-to n-of #-inter-connections other turtles with [not favela?] [
+    create-links-to n-of #-inter-favela other turtles with [not favela?] [
       hide-link
     ]
   ]
 
   ;; people NOT from the favelas
   ask turtles with [not favela?] [
-    create-links-to n-of #-intra-connections other turtles with [not favela?] [
+    create-links-to n-of #-intra-nonfavela other turtles with [not favela?] [
       hide-link
     ]
-    create-links-to n-of #-inter-connections other turtles with [favela?] [
+    create-links-to n-of #-inter-nonfavela other turtles with [favela?] [
       hide-link
     ]
   ]
@@ -353,7 +372,9 @@ to disease-development
         set infected? false
         ; free icus
         set #-icus-available #-icus-available + 1
-        ifelse icu-private? [ set #-icus-private #-icus-private + 1 ] [set #-icus-public #-icus-public + 1 ]
+
+        ifelse icu-private? [ set #-icus-private-available #-icus-private-available + 1 ] [set #-icus-public-available #-icus-public-available + 1 ]
+
         ; chance of death
         ifelse random-float 100 < 50 [ ; 50% of chance to die
           ; die
@@ -386,10 +407,10 @@ to icu [ person ]
 
     ; if icu is private
     ifelse icu-private? [   ;;; private
-      ifelse #-icus-private > 0 [
+      ifelse #-icus-private-available > 0 [
         set icu? true
         set #-icus-available #-icus-available - 1
-        set #-icus-private #-icus-private - 1
+        set #-icus-private-available #-icus-private-available - 1
       ][
         ; die
         set icu? false
@@ -399,14 +420,14 @@ to icu [ person ]
         ;set hidden? true
         set shape "x"
         ask my-links [die]
-        set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
+        set deaths-infra-private deaths-infra-private + 1 ; deaths because of lack of infrastructure
       ]
     ][
       ; if icu is public
-      ifelse #-icus-public > 0 [
+      ifelse #-icus-public-available > 0 [
         set icu? true
         set #-icus-available #-icus-available - 1
-        set #-icus-public #-icus-public - 1
+        set #-icus-public-available #-icus-public-available - 1
       ][
         ; die
         if debug? [type self type "DIED for the lack of ICUs!!!\n"]
@@ -417,7 +438,7 @@ to icu [ person ]
         ;set hidden? true
         set shape "x"
         ask my-links [die]
-        set deaths-infra deaths-infra + 1 ; deaths because of lack of infrastructure
+        set deaths-infra-public deaths-infra-public + 1 ; deaths because of lack of infrastructure
       ]
     ]
   ]
@@ -641,6 +662,25 @@ to-report read-csv-to-list [ file ]
   file-close
   report returnList
 end
+
+
+to set-standard-globals
+  set perc-favelas 5
+  set perc-idosos 44
+  set perc-idosos-favela 5
+  set #-icus-public 1204
+  set #-icus-private 771
+  set initial-infected 20
+  set risk-rate-favela 120
+  set #-inter-favela 2
+  set #-inter-nonfavela 2
+  set #-intra-favela 4
+  set #-intra-nonfavela 3
+
+  set favela-perc-private 5
+  set nonfavela-perc-private 50
+
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 772
@@ -704,7 +744,7 @@ perc-idosos
 perc-idosos
 0
 100
-21.0
+44.0
 1
 1
 %
@@ -719,7 +759,7 @@ perc-favelas
 perc-favelas
 0
 100
-64.0
+5.0
 1
 1
 %
@@ -804,15 +844,15 @@ NIL
 0
 
 SLIDER
-7
-183
-187
-216
-#-icus
-#-icus
+8
+219
+188
+252
+#-icus-public
+#-icus-public
 0
-100
-20.0
+1500
+1204.0
 1
 1
 ICUs
@@ -907,7 +947,7 @@ true
 PENS
 "Hospitalized" 1.0 0 -16777216 true "" "plot count turtles with [hospitalized? and not dead?]"
 "ICUs" 1.0 0 -14439633 true "" "plot count turtles with [icu? and not dead?]"
-"ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus"
+"ICUs (max)" 1.0 0 -5298144 true "" "plot #-icus-available"
 
 MONITOR
 1094
@@ -926,7 +966,7 @@ MONITOR
 1399
 634
 Deaths (No ICUs)
-deaths-infra
+deaths-infra-public + deaths-infra-private
 17
 1
 11
@@ -954,15 +994,15 @@ count turtles with [immune?] * 100 / count turtles
 11
 
 SLIDER
-13
-386
-187
-419
+8
+299
+189
+332
 initial-infected
 initial-infected
 1
-5
-2.0
+50
+20.0
 1
 1
 person(s)
@@ -1002,22 +1042,22 @@ count turtles with [dead?] * 100 / count turtles
 11
 
 TEXTBOX
-1207
-551
-1247
-569
+1347
+26
+1387
+44
 Favela
 11
 0.0
 0
 
 SLIDER
-12
+10
 426
-214
+183
 459
-#-inter-connections
-#-inter-connections
+#-inter-favela
+#-inter-favela
 1
 20
 2.0
@@ -1029,10 +1069,10 @@ HORIZONTAL
 SLIDER
 10
 463
-216
+182
 496
-#-intra-connections
-#-intra-connections
+#-intra-favela
+#-intra-favela
 1
 20
 4.0
@@ -1052,28 +1092,13 @@ count turtles with [infected?]
 1
 11
 
-SLIDER
-6
-222
-188
-255
-perc-icus-public
-perc-icus-public
-0
-100
-30.0
-1
-1
-%
-HORIZONTAL
-
 MONITOR
 620
 485
 763
 530
 ICUs Available (Public)
-#-icus-public
+#-icus-public-available
 17
 1
 11
@@ -1084,36 +1109,36 @@ MONITOR
 767
 581
 ICUs Available (Private)
-#-icus-private
+#-icus-private-available
 17
 1
 11
 
 SLIDER
-11
-505
-193
-538
+256
+390
+438
+423
 favela-perc-private
 favela-perc-private
 0
 100
-10.0
+5.0
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-10
-548
-195
-581
+255
+433
+440
+466
 nonfavela-perc-private
 nonfavela-perc-private
 0
 100
-80.0
+50.0
 1
 1
 %
@@ -1130,10 +1155,10 @@ Isolations scenarios\n
 0
 
 SLIDER
-6
-259
-187
-292
+257
+473
+438
+506
 risk-rate-favela
 risk-rate-favela
 100
@@ -1210,19 +1235,79 @@ PLOT
 171
 460
 334
-Check threshold
-NIL
-NIL
+# of deaths
+Days
+Dead
 0.0
 10.0
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
-"People with symptoms" 1.0 0 -16777216 true "" "plot count turtles with [symptoms?]"
-"Intervention Threshold" 1.0 0 -5298144 true "" "plot intervention-threshold"
+"Favela" 1.0 0 -16777216 true "" "plot count turtles with [dead? and favela?] * 100 / count turtles with [favela?]"
+"Non Favela" 1.0 0 -5298144 true "" "plot count turtles with [dead? and not favela?] * 100 / count turtles with [not favela?]"
+
+SLIDER
+6
+179
+190
+212
+perc-idosos-favela
+perc-idosos-favela
+0
+100
+5.0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+8
+258
+189
+291
+#-icus-private
+#-icus-private
+0
+1000
+771.0
+1
+1
+ICUs
+HORIZONTAL
+
+SLIDER
+9
+503
+198
+536
+#-inter-nonfavela
+#-inter-nonfavela
+0
+10
+2.0
+1
+1
+person(s)
+HORIZONTAL
+
+SLIDER
+8
+543
+201
+576
+#-intra-nonfavela
+#-intra-nonfavela
+0
+10
+3.0
+1
+1
+person(s)
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1594,6 +1679,88 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="Simulations_Scenarios_Quarentine" repetitions="5" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [symptoms?]</metric>
+    <metric>count turtles with [hospitalized?]</metric>
+    <metric>count turtles with [icu?]</metric>
+    <metric>count turtles with [isolated?]</metric>
+    <metric>count turtles with [immune?]</metric>
+    <metric>count turtles with [dead? and favela?]</metric>
+    <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>deaths-virus</metric>
+    <metric>deaths-infra-private</metric>
+    <metric>deaths-infra-public</metric>
+    <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="initial-infected">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarentine-mode?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-public">
+      <value value="1204"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-population">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-nonfavela">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="risk-rate-favela">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-isolated">
+      <value value="25"/>
+      <value value="50"/>
+      <value value="75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-favela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-nonfavela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-private">
+      <value value="771"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="isolation-mode">
+      <value value="&quot;id&quot;"/>
+      <value value="&quot;old&quot;"/>
+      <value value="&quot;perc&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="nonfavela-perc-private">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos-favela">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="intervention-threshold">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="favela-perc-private">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="scenario">
+      <value value="&quot;symptomatic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-favela">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-favelas">
+      <value value="5"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
