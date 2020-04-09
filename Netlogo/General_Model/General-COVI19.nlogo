@@ -563,7 +563,7 @@ to set-quarentine
         ;set intervention? true
         if isolation-mode = "id" [ isolate-id ]
       ][
-        type "end of quarentine\n"
+        if debug? [type "end of quarentine\n"]
         set intervention? false
         end-quarentine
       ]
@@ -1178,7 +1178,7 @@ perc-isolated
 perc-isolated
 0
 100
-50.0
+75.0
 1
 1
 %
@@ -1216,7 +1216,7 @@ SWITCH
 382
 quarentine-mode?
 quarentine-mode?
-1
+0
 1
 -1000
 
@@ -1228,7 +1228,7 @@ CHOOSER
 isolation-mode
 isolation-mode
 "perc" "id" "old"
-1
+0
 
 PLOT
 243
@@ -1752,6 +1752,70 @@ NetLogo 6.1.1
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
       <value value="&quot;symptomatic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-favela">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-favelas">
+      <value value="5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Simulations_Scenarios_Normal" repetitions="5" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [symptoms?]</metric>
+    <metric>count turtles with [hospitalized?]</metric>
+    <metric>count turtles with [icu?]</metric>
+    <metric>count turtles with [isolated?]</metric>
+    <metric>count turtles with [immune?]</metric>
+    <metric>count turtles with [dead? and favela?]</metric>
+    <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>deaths-virus</metric>
+    <metric>deaths-infra-private</metric>
+    <metric>deaths-infra-public</metric>
+    <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="initial-infected">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarentine-mode?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-public">
+      <value value="1204"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-population">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-nonfavela">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="risk-rate-favela">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-favela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-nonfavela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-private">
+      <value value="771"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="nonfavela-perc-private">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos-favela">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="favela-perc-private">
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
