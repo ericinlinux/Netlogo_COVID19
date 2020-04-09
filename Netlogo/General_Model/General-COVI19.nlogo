@@ -1753,7 +1753,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="Simulations_Scenarios_Normal" repetitions="5" runMetricsEveryStep="true">
+  <experiment name="Simulations_Scenarios_Normal" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
