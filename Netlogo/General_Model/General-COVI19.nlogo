@@ -1680,7 +1680,7 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="Simulations_Scenarios_Quarentine" repetitions="5" runMetricsEveryStep="true">
+  <experiment name="Simulations_Scenarios_Quarentine" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
