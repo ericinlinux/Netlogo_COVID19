@@ -1680,7 +1680,7 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="Simulations_Scenarios_Quarentine_ID" repetitions="100" runMetricsEveryStep="true">
+  <experiment name="ID_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
@@ -1753,7 +1753,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="Simulations_Scenarios_Normal" repetitions="100" runMetricsEveryStep="true">
+  <experiment name="No_Interventions_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
@@ -1817,7 +1817,85 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="Simulations_Scenarios_Quarentine_Perc" repetitions="100" runMetricsEveryStep="true">
+  <experiment name="Perc_180k" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [symptoms?]</metric>
+    <metric>count turtles with [hospitalized?]</metric>
+    <metric>count turtles with [icu?]</metric>
+    <metric>count turtles with [isolated?]</metric>
+    <metric>count turtles with [immune?]</metric>
+    <metric>count turtles with [dead? and favela?]</metric>
+    <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>deaths-virus</metric>
+    <metric>deaths-infra-private</metric>
+    <metric>deaths-infra-public</metric>
+    <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="quarentine-mode?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-population">
+      <value value="180000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="isolation-mode">
+      <value value="&quot;perc&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-isolated">
+      <value value="25"/>
+      <value value="50"/>
+      <value value="75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-infected">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-public">
+      <value value="1204"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-nonfavela">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="risk-rate-favela">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-favela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-nonfavela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-private">
+      <value value="771"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="nonfavela-perc-private">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos-favela">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="intervention-threshold">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="favela-perc-private">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="scenario">
+      <value value="&quot;symptomatic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-favela">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-favelas">
+      <value value="5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Old_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
@@ -1836,12 +1914,7 @@ NetLogo 6.1.1
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="isolation-mode">
-      <value value="&quot;perc&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="perc-isolated">
-      <value value="25"/>
-      <value value="50"/>
-      <value value="75"/>
+      <value value="&quot;old&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-infected">
       <value value="20"/>
@@ -1895,7 +1968,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="Simulations_Scenarios_Quarentine_Old" repetitions="100" runMetricsEveryStep="true">
+  <experiment name="No_Interventions_180k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
@@ -1910,6 +1983,146 @@ NetLogo 6.1.1
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
     <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="num-population">
+      <value value="180000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-infected">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarentine-mode?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-public">
+      <value value="1204"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-nonfavela">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="risk-rate-favela">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-favela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-nonfavela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-private">
+      <value value="771"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="nonfavela-perc-private">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos-favela">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="favela-perc-private">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-favela">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-favelas">
+      <value value="5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="ID_180k" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [symptoms?]</metric>
+    <metric>count turtles with [hospitalized?]</metric>
+    <metric>count turtles with [icu?]</metric>
+    <metric>count turtles with [isolated?]</metric>
+    <metric>count turtles with [immune?]</metric>
+    <metric>count turtles with [dead? and favela?]</metric>
+    <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>deaths-virus</metric>
+    <metric>deaths-infra-private</metric>
+    <metric>deaths-infra-public</metric>
+    <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="num-population">
+      <value value="180000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarentine-mode?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="isolation-mode">
+      <value value="&quot;id&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-infected">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-public">
+      <value value="1204"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-nonfavela">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="risk-rate-favela">
+      <value value="120"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-favela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-inter-nonfavela">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-icus-private">
+      <value value="771"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="nonfavela-perc-private">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos-favela">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-idosos">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="intervention-threshold">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="favela-perc-private">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="scenario">
+      <value value="&quot;symptomatic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#-intra-favela">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-favelas">
+      <value value="5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Old_180k" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [symptoms?]</metric>
+    <metric>count turtles with [hospitalized?]</metric>
+    <metric>count turtles with [icu?]</metric>
+    <metric>count turtles with [isolated?]</metric>
+    <metric>count turtles with [immune?]</metric>
+    <metric>count turtles with [dead? and favela?]</metric>
+    <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>deaths-virus</metric>
+    <metric>deaths-infra-private</metric>
+    <metric>deaths-infra-public</metric>
+    <metric>sum [#-transmitted] of turtles with [not never-infected?]/ count turtles with [not never-infected?]</metric>
+    <enumeratedValueSet variable="num-population">
+      <value value="180000"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="quarentine-mode?">
       <value value="true"/>
     </enumeratedValueSet>
@@ -1921,9 +2134,6 @@ NetLogo 6.1.1
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-icus-public">
       <value value="1204"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="num-population">
-      <value value="10000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-nonfavela">
       <value value="3"/>

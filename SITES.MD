@@ -51,6 +51,11 @@ https://oglobo.globo.com/sociedade/coronavirus/coronavirus-infectado-vira-fabric
 
 https://agenciabrasil.ebc.com.br/saude/noticia/2020-03/covid-19-moradores-de-favelas-precisam-de-acoes-de-prevencao
 
+## DEMOGRAFIA
+
+[Idosos no Rio](https://www.saude.rj.gov.br/atencao-primaria-a-saude/areas-tecnicas/saude-do-idoso)
+[UTIs no SUS](https://www1.folha.uol.com.br/equilibrioesaude/2020/03/sus-nos-estados-nao-tem-leitos-de-uti-contra-o-coronavirus.shtml)
+
 
 # GIS AND PROGRAMMING
 
