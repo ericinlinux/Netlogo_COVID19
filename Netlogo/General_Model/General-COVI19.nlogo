@@ -717,7 +717,7 @@ SLIDER
 num-population
 num-population
 100
-10000
+200000
 10000.0
 100
 1
