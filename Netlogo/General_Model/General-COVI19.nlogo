@@ -1691,6 +1691,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -1764,6 +1770,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -1828,6 +1840,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -1906,6 +1924,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -1979,6 +2003,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -2043,6 +2073,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
@@ -2116,6 +2152,12 @@ NetLogo 6.1.1
     <metric>count turtles with [immune?]</metric>
     <metric>count turtles with [dead? and favela?]</metric>
     <metric>count turtles with [dead? and not favela?]</metric>
+    <metric>count turtles with [dead? and old?]</metric>
+    <metric>count turtles with [dead? and not old?]</metric>
+    <metric>count turtles with [dead? and old? and favela?]</metric>
+    <metric>count turtles with [dead? and old? and not favela?]</metric>
+    <metric>count turtles with [dead? and not old? and favela?]</metric>
+    <metric>count turtles with [dead? and not old? and not favela?]</metric>
     <metric>deaths-virus</metric>
     <metric>deaths-infra-private</metric>
     <metric>deaths-infra-public</metric>
