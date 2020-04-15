@@ -1684,6 +1684,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -1771,6 +1772,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -1849,6 +1851,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -1941,7 +1944,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
-    <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -2029,6 +2032,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -2107,6 +2111,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -2194,6 +2199,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
@@ -2281,6 +2287,7 @@ NetLogo 6.1.1
     <setup>setup</setup>
     <go>go</go>
     <metric>count turtles with [infected?]</metric>
+    <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
     <metric>count turtles with [hospitalized?]</metric>
     <metric>count turtles with [icu?]</metric>
