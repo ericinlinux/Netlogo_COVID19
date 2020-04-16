@@ -187,32 +187,19 @@ to infect [ person ]
 
     ;; define severity
     let chance random 100
+
+    if favela? [ set chance chance * risk-rate-favela / 100 ]
+
     ifelse old? [ ;old
-      ifelse chance < 20 [
-        set severity 0
-      ] [
-        ifelse chance < 40 [
-          set severity 1
-        ][
-          ifelse chance < 60 [
-            set severity 2
-          ][
-            set severity 3
-          ]
+      ifelse chance < 20 [ set severity 0 ][
+        ifelse chance < 40 [ set severity 1 ][
+          ifelse chance < 60 [ set severity 2 ] [ set severity 3 ]
         ]
       ]
     ] [ ; young
-      ifelse chance < 60 [
-        set severity 0
-      ][
-        ifelse chance < 80 [
-          set severity 1
-        ][
-          ifelse chance < 98 [
-            set severity 2
-          ][
-            set severity 3
-          ]
+      ifelse chance < 60 [ set severity 0 ][
+        ifelse chance < 80 [ set severity 1 ][
+          ifelse chance < 98 [ set severity 2 ][ set severity 3 ]
         ]
       ]
     ]
