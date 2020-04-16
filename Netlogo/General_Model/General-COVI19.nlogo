@@ -1192,7 +1192,7 @@ CHOOSER
 scenario
 scenario
 "symptomatic" "hospitalized" "dead"
-0
+1
 
 SLIDER
 241
@@ -1308,6 +1308,28 @@ SLIDER
 1
 person(s)
 HORIZONTAL
+
+MONITOR
+232
+532
+320
+577
+Intervention
+intervention?
+17
+1
+11
+
+MONITOR
+333
+532
+422
+577
+# of isolated
+count turtles with [isolated?]
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1683,6 +1705,7 @@ NetLogo 6.1.1
   <experiment name="ID_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -1759,7 +1782,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
@@ -1771,6 +1794,7 @@ NetLogo 6.1.1
   <experiment name="No_Interventions_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -1850,6 +1874,7 @@ NetLogo 6.1.1
   <experiment name="Perc_180k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -1931,7 +1956,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
@@ -1943,6 +1968,7 @@ NetLogo 6.1.1
   <experiment name="Old_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -2019,7 +2045,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
@@ -2031,6 +2057,7 @@ NetLogo 6.1.1
   <experiment name="No_Interventions_180k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -2110,6 +2137,7 @@ NetLogo 6.1.1
   <experiment name="ID_180k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -2186,7 +2214,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
@@ -2198,6 +2226,7 @@ NetLogo 6.1.1
   <experiment name="Old_180k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -2274,7 +2303,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
@@ -2286,6 +2315,7 @@ NetLogo 6.1.1
   <experiment name="Perc_10k" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
+    <metric>count turtles</metric>
     <metric>count turtles with [infected?]</metric>
     <metric>count turtles with [never-infected?]</metric>
     <metric>count turtles with [symptoms?]</metric>
@@ -2367,7 +2397,7 @@ NetLogo 6.1.1
       <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="scenario">
-      <value value="&quot;symptomatic&quot;"/>
+      <value value="&quot;hospitalized&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="#-intra-favela">
       <value value="4"/>
